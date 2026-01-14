@@ -25,7 +25,7 @@ end
 function M.open()
   local ok, diffview = pcall(require, "diffview")
   if not ok then
-    vim.notify("diffnotes: diffview.nvim is required", vim.log.levels.ERROR)
+    vim.notify("diffview.nvim is required", vim.log.levels.ERROR, { title = "Diffnotes" })
     return
   end
 
@@ -120,7 +120,7 @@ function M.close()
     local markdown = export.generate_markdown()
     vim.fn.setreg("+", markdown)
     vim.fn.setreg("*", markdown)
-    vim.notify(string.format("diffnotes: Exported %d comment(s) to clipboard", count), vim.log.levels.INFO)
+    vim.notify(string.format("Exported %d comment(s) to clipboard", count), vim.log.levels.INFO, { title = "Diffnotes" })
   end
   vim.cmd("DiffviewClose")
 end
@@ -136,7 +136,7 @@ end
 function M.clear()
   store.clear()
   require("diffnotes.marks").clear_all()
-  vim.notify("diffnotes: All comments cleared", vim.log.levels.INFO)
+  vim.notify("All comments cleared", vim.log.levels.INFO, { title = "Diffnotes" })
 end
 
 function M.count()
@@ -197,13 +197,13 @@ function M.toggle_readonly()
   end
 
   local mode = cfg.diffview.readonly and "readonly" or "edit"
-  vim.notify("diffnotes: Switched to " .. mode .. " mode", vim.log.levels.INFO)
+  vim.notify("Switched to " .. mode .. " mode", vim.log.levels.INFO, { title = "Diffnotes" })
 end
 
 function M.toggle_layout()
   local ok, lib = pcall(require, "diffview.lib")
   if not ok then
-    vim.notify("diffnotes: diffview.nvim is required", vim.log.levels.ERROR)
+    vim.notify("diffview.nvim is required", vim.log.levels.ERROR, { title = "Diffnotes" })
     return
   end
 

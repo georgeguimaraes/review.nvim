@@ -2,6 +2,10 @@ local M = {}
 
 local store = require("diffnotes.store")
 
+local function notify(msg, level)
+  vim.notify(msg, level, { title = "Diffnotes" })
+end
+
 ---@return string
 function M.generate_markdown()
   local all_comments = store.get_all()
@@ -32,7 +36,7 @@ function M.to_clipboard()
   local count = store.count()
 
   if count == 0 then
-    vim.notify("diffnotes: No comments to export", vim.log.levels.WARN)
+    notify("No comments to export", vim.log.levels.WARN)
     return
   end
 
@@ -57,10 +61,7 @@ function M.to_clipboard()
     vim.api.nvim_win_close(0, true)
   end, { buffer = buf, nowait = true })
 
-  vim.notify(
-    string.format("diffnotes: Exported %d comment(s) to clipboard", count),
-    vim.log.levels.INFO
-  )
+  notify(string.format("Exported %d comment(s) to clipboard", count), vim.log.levels.INFO)
 end
 
 function M.preview()

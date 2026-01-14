@@ -11,7 +11,7 @@ function M.open(initial_type, initial_text, callback)
   local ok_layout, Layout = pcall(require, "nui.layout")
 
   if not (ok_input and ok_popup and ok_layout) then
-    vim.notify("diffnotes: nui.nvim is required for comment input", vim.log.levels.ERROR)
+    vim.notify("nui.nvim is required for comment input", vim.log.levels.ERROR, { title = "Diffnotes" })
     callback(nil, nil)
     return
   end

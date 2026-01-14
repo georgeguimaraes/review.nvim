@@ -5,17 +5,21 @@ local hooks = require("diffnotes.hooks")
 local popup = require("diffnotes.popup")
 local marks = require("diffnotes.marks")
 
+local function notify(msg, level)
+  vim.notify(msg, level, { title = "Diffnotes" })
+end
+
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
 function M.add_at_cursor(initial_type)
   local file, line = hooks.get_cursor_position()
   if not file or not line then
-    vim.notify("diffnotes: Could not determine cursor position", vim.log.levels.WARN)
+    notify("Could not determine cursor position", vim.log.levels.WARN)
     return
   end
 
   local existing = store.get_at_line(file, line)
   if existing then
-    vim.notify("diffnotes: Comment already exists at this line. Use edit instead.", vim.log.levels.WARN)
+    notify("Comment already exists at this line. Use edit instead.", vim.log.levels.WARN)
     return
   end
 
@@ -23,7 +27,7 @@ function M.add_at_cursor(initial_type)
     if comment_type and text then
       store.add(file, line, comment_type, text)
       marks.refresh()
-      vim.notify(string.format("diffnotes: Added %s comment", comment_type), vim.log.levels.INFO)
+      notify(string.format("Added %s comment", comment_type), vim.log.levels.INFO)
     end
   end)
 end
@@ -36,13 +40,13 @@ end
 function M.edit_at_cursor()
   local file, line = hooks.get_cursor_position()
   if not file or not line then
-    vim.notify("diffnotes: Could not determine cursor position", vim.log.levels.WARN)
+    notify("Could not determine cursor position", vim.log.levels.WARN)
     return
   end
 
   local comment = store.get_at_line(file, line)
   if not comment then
-    vim.notify("diffnotes: No comment at cursor position", vim.log.levels.WARN)
+    notify("No comment at cursor position", vim.log.levels.WARN)
     return
   end
 
@@ -50,7 +54,7 @@ function M.edit_at_cursor()
     if new_type and text then
       store.update(comment.id, text, new_type)
       marks.refresh()
-      vim.notify("diffnotes: Comment updated", vim.log.levels.INFO)
+      notify("Comment updated", vim.log.levels.INFO)
     end
   end)
 end
@@ -58,13 +62,13 @@ end
 function M.delete_at_cursor()
   local file, line = hooks.get_cursor_position()
   if not file or not line then
-    vim.notify("diffnotes: Could not determine cursor position", vim.log.levels.WARN)
+    notify("Could not determine cursor position", vim.log.levels.WARN)
     return
   end
 
   local comment = store.get_at_line(file, line)
   if not comment then
-    vim.notify("diffnotes: No comment at cursor position", vim.log.levels.WARN)
+    notify("No comment at cursor position", vim.log.levels.WARN)
     return
   end
 
@@ -74,7 +78,7 @@ function M.delete_at_cursor()
     if choice == "Yes" then
       store.delete(comment.id)
       marks.refresh()
-      vim.notify("diffnotes: Comment deleted", vim.log.levels.INFO)
+      notify("Comment deleted", vim.log.levels.INFO)
     end
   end)
 end
@@ -93,7 +97,7 @@ function M.goto_next()
     end
   end
 
-  vim.notify("diffnotes: No more comments in this file", vim.log.levels.INFO)
+  notify("No more comments in this file", vim.log.levels.INFO)
 end
 
 function M.goto_prev()
@@ -111,7 +115,7 @@ function M.goto_prev()
     end
   end
 
-  vim.notify("diffnotes: No previous comments in this file", vim.log.levels.INFO)
+  notify("No previous comments in this file", vim.log.levels.INFO)
 end
 
 function M.list()
@@ -119,7 +123,7 @@ function M.list()
   local all_comments = store.get_all()
 
   if #all_comments == 0 then
-    vim.notify("diffnotes: No comments yet", vim.log.levels.INFO)
+    notify("No comments yet", vim.log.levels.INFO)
     return
   end
 
