@@ -1,12 +1,12 @@
 local M = {}
 
-local store = require("diffnotes.store")
-local hooks = require("diffnotes.hooks")
-local popup = require("diffnotes.popup")
-local marks = require("diffnotes.marks")
+local store = require("review.store")
+local hooks = require("review.hooks")
+local popup = require("review.popup")
+local marks = require("review.marks")
 
 local function notify(msg, level)
-  vim.notify(msg, level, { title = "Diffnotes" })
+  vim.notify(msg, level, { title = "Review" })
 end
 
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
@@ -119,7 +119,7 @@ function M.goto_prev()
 end
 
 function M.list()
-  local config = require("diffnotes.config").get()
+  local config = require("review.config").get()
   local all_comments = store.get_all()
 
   if #all_comments == 0 then

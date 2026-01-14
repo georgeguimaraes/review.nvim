@@ -1,7 +1,7 @@
-local store = require("diffnotes.store")
-local export = require("diffnotes.export")
+local store = require("review.store")
+local export = require("review.export")
 
-describe("diffnotes.export", function()
+describe("review.export", function()
   before_each(function()
     store.clear()
   end)

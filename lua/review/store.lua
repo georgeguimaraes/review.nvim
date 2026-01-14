@@ -1,6 +1,6 @@
 local M = {}
 
-local storage = require("diffnotes.storage")
+local storage = require("review.storage")
 
 ---@class Comment
 ---@field id string

@@ -1,17 +1,17 @@
 local M = {}
 
-local config = require("diffnotes.config")
-local highlights = require("diffnotes.highlights")
-local hooks = require("diffnotes.hooks")
-local keymaps = require("diffnotes.keymaps")
-local store = require("diffnotes.store")
-local export = require("diffnotes.export")
-local comments = require("diffnotes.comments")
+local config = require("review.config")
+local highlights = require("review.highlights")
+local hooks = require("review.hooks")
+local keymaps = require("review.keymaps")
+local store = require("review.store")
+local export = require("review.export")
+local comments = require("review.comments")
 
 local initialized = false
 local augroup = nil
 
----@param opts? DiffnotesConfig
+---@param opts? ReviewConfig
 function M.setup(opts)
   if initialized then
     return
@@ -21,7 +21,7 @@ function M.setup(opts)
   highlights.setup()
 
   -- Set up autocmd to detect CodeDiff sessions
-  augroup = vim.api.nvim_create_augroup("diffnotes", { clear = true })
+  augroup = vim.api.nvim_create_augroup("review", { clear = true })
 
   vim.api.nvim_create_autocmd("TabEnter", {
     group = augroup,
@@ -55,20 +55,17 @@ function M._check_codediff_session()
     return
   end
 
-  -- This is a codediff session
-  local orig_buf, mod_buf = lifecycle.get_buffers(tabpage)
-
   -- Set up hooks
   hooks.on_session_created(tabpage)
 
-  -- Set up keymaps
-  keymaps.setup_keymaps(tabpage, orig_buf, mod_buf)
+  -- Set up keymaps (uses codediff's set_tab_keymap internally)
+  keymaps.setup_keymaps(tabpage)
 end
 
 function M.open()
   local ok, _ = pcall(require, "codediff")
   if not ok then
-    vim.notify("codediff.nvim is required", vim.log.levels.ERROR, { title = "Diffnotes" })
+    vim.notify("codediff.nvim is required", vim.log.levels.ERROR, { title = "Review" })
     return
   end
 
@@ -79,9 +76,25 @@ function M.open()
   vim.cmd("CodeDiff")
 
   -- Wait for CodeDiff to initialize, then set up our hooks
-  vim.defer_fn(function()
-    M._check_codediff_session()
-  end, 200)
+  -- Try multiple times as session may take time to initialize
+  local attempts = 0
+  local max_attempts = 5
+  local function try_setup()
+    attempts = attempts + 1
+    local lifecycle_ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
+    if lifecycle_ok then
+      local tabpage = vim.api.nvim_get_current_tabpage()
+      local sess = lifecycle.get_session(tabpage)
+      if sess then
+        M._check_codediff_session()
+        return
+      end
+    end
+    if attempts < max_attempts then
+      vim.defer_fn(try_setup, 100)
+    end
+  end
+  vim.defer_fn(try_setup, 200)
 end
 
 function M.close()
@@ -91,7 +104,7 @@ function M.close()
     local markdown = export.generate_markdown()
     vim.fn.setreg("+", markdown)
     vim.fn.setreg("*", markdown)
-    vim.notify(string.format("Exported %d comment(s) to clipboard", count), vim.log.levels.INFO, { title = "Diffnotes" })
+    vim.notify(string.format("Exported %d comment(s) to clipboard", count), vim.log.levels.INFO, { title = "Review" })
   end
 
   -- Close the tab
@@ -109,8 +122,8 @@ end
 
 function M.clear()
   store.clear()
-  require("diffnotes.marks").clear_all()
-  vim.notify("All comments cleared", vim.log.levels.INFO, { title = "Diffnotes" })
+  require("review.marks").clear_all()
+  vim.notify("All comments cleared", vim.log.levels.INFO, { title = "Review" })
 end
 
 function M.count()
@@ -160,10 +173,11 @@ function M.toggle_readonly()
   end
 
   -- Re-setup keymaps with new readonly state
-  keymaps.setup_keymaps(tabpage, orig_buf, mod_buf)
+  keymaps.clear_keymaps()
+  keymaps.setup_keymaps(tabpage)
 
   local mode = cfg.codediff.readonly and "readonly" or "edit"
-  vim.notify("Switched to " .. mode .. " mode", vim.log.levels.INFO, { title = "Diffnotes" })
+  vim.notify("Switched to " .. mode .. " mode", vim.log.levels.INFO, { title = "Review" })
 end
 
 return M

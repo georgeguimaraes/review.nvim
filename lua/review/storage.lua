@@ -1,6 +1,6 @@
 local M = {}
 
-local data_dir = vim.fn.stdpath("data") .. "/diffnotes"
+local data_dir = vim.fn.stdpath("data") .. "/review"
 
 ---@return string|nil
 local function get_git_root()

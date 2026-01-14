@@ -1,9 +1,9 @@
 local M = {}
 
-local store = require("diffnotes.store")
-local config = require("diffnotes.config")
+local store = require("review.store")
+local config = require("review.config")
 
-local ns_id = vim.api.nvim_create_namespace("diffnotes")
+local ns_id = vim.api.nvim_create_namespace("review")
 
 ---@param bufnr number
 function M.render_for_buffer(bufnr)
@@ -42,15 +42,15 @@ function M.render_for_buffer(bufnr)
   for _, comment in ipairs(comments) do
     local type_info = cfg.comment_types[comment.type]
     local icon = type_info and type_info.icon or "●"
-    local hl = type_info and type_info.hl or "DiffnotesSign"
+    local hl = type_info and type_info.hl or "ReviewSign"
     local line_hl = type_info and type_info.line_hl
     local name = type_info and type_info.name or comment.type
 
     local line = comment.line - 1
     if line >= 0 then
-      -- Build virtual lines for the comment
+      -- Build virtual lines for the comment (no emoji since gutter has it)
       local virt_lines = {}
-      local header = string.format(" %s %s: ", icon, name)
+      local header = string.format(" %s: ", name)
 
       -- Split comment text into lines if it's multiline
       local text_lines = vim.split(comment.text, "\n")
@@ -74,7 +74,7 @@ function M.render_for_buffer(bufnr)
 end
 
 function M.refresh()
-  local ok, hooks = pcall(require, "diffnotes.hooks")
+  local ok, hooks = pcall(require, "review.hooks")
   if not ok then
     return
   end

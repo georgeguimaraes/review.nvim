@@ -1,6 +1,6 @@
-local store = require("diffnotes.store")
+local store = require("review.store")
 
-describe("diffnotes.store", function()
+describe("review.store", function()
   before_each(function()
     store.clear()
   end)

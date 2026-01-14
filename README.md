@@ -1,4 +1,4 @@
-# diffnotes.nvim
+# review.nvim
 
 Code review annotations for codediff.nvim, optimized for AI feedback loops.
 
@@ -8,7 +8,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 
 - Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
 - Comments displayed as signs, line highlights, and virtual text
-- Comments persist per branch (stored in `~/.local/share/nvim/diffnotes/`)
+- Comments persist per branch (stored in `~/.local/share/nvim/review/`)
 - Auto-export comments to clipboard when closing
 - Export format optimized for AI conversations
 - Built on top of codediff.nvim
@@ -25,13 +25,13 @@ Using lazy.nvim:
 
 ```lua
 {
-  "georgeguimaraes/diffnotes.nvim",
+  "georgeguimaraes/review.nvim",
   dependencies = {
     "esmuellert/codediff.nvim",
     "MunifTanjim/nui.nvim",
   },
   config = function()
-    require("diffnotes").setup()
+    require("review").setup()
   end,
 }
 ```
@@ -39,12 +39,14 @@ Using lazy.nvim:
 ## Usage
 
 ```vim
-:DiffnotesOpen          " Open codediff with comment keymaps enabled
-:DiffnotesExport        " Export comments to clipboard
-:DiffnotesPreview       " Preview exported markdown in split
-:DiffnotesList          " List all comments
-:DiffnotesClear         " Clear all comments
-:DiffnotesClose         " Close codediff
+:Review              " Open codediff with comment keymaps (default)
+:Review open         " Same as above
+:Review close        " Close and export comments to clipboard
+:Review export       " Export comments to clipboard
+:Review preview      " Preview exported markdown in split
+:Review list         " List all comments
+:Review clear        " Clear all comments
+:Review toggle       " Toggle readonly/edit mode
 ```
 
 ## Keybindings (in diff view)
@@ -76,12 +78,12 @@ Using lazy.nvim:
 ## Configuration
 
 ```lua
-require("diffnotes").setup({
+require("review").setup({
   comment_types = {
-    note = { key = "n", name = "Note", icon = "📝", hl = "DiffnotesNote" },
-    suggestion = { key = "s", name = "Suggestion", icon = "💡", hl = "DiffnotesSuggestion" },
-    issue = { key = "i", name = "Issue", icon = "⚠️", hl = "DiffnotesIssue" },
-    praise = { key = "p", name = "Praise", icon = "✨", hl = "DiffnotesPraise" },
+    note = { key = "n", name = "Note", icon = "📝", hl = "ReviewNote" },
+    suggestion = { key = "s", name = "Suggestion", icon = "💡", hl = "ReviewSuggestion" },
+    issue = { key = "i", name = "Issue", icon = "⚠️", hl = "ReviewIssue" },
+    praise = { key = "p", name = "Praise", icon = "✨", hl = "ReviewPraise" },
   },
   keymaps = {
     add_note = "<leader>cn",

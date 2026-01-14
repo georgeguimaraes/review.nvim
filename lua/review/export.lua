@@ -1,9 +1,9 @@
 local M = {}
 
-local store = require("diffnotes.store")
+local store = require("review.store")
 
 local function notify(msg, level)
-  vim.notify(msg, level, { title = "Diffnotes" })
+  vim.notify(msg, level, { title = "Review" })
 end
 
 ---@return string
@@ -48,7 +48,7 @@ function M.to_clipboard()
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(markdown, "\n"))
   vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
   vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
-  vim.api.nvim_buf_set_name(buf, "[Diffnotes Export]")
+  vim.api.nvim_buf_set_name(buf, "[Review Export]")
 
   -- Open at bottom with appropriate height
   local line_count = #vim.split(markdown, "\n")

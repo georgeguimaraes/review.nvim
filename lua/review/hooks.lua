@@ -1,7 +1,7 @@
 local M = {}
 
-local marks = require("diffnotes.marks")
-local config = require("diffnotes.config")
+local marks = require("review.marks")
+local config = require("review.config")
 
 ---@type number|nil Current tabpage with active codediff session
 local current_tabpage = nil

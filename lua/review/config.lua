@@ -1,10 +1,10 @@
 local M = {}
 
----@class DiffnotesConfig
+---@class ReviewConfig
 ---@field comment_types table<string, CommentType>
----@field keymaps DiffnotesKeymaps
----@field export DiffnotesExportConfig
----@field codediff DiffnotesCodediffConfig
+---@field keymaps ReviewKeymaps
+---@field export ReviewExportConfig
+---@field codediff ReviewCodediffConfig
 
 ---@class CommentType
 ---@field key string
@@ -13,7 +13,7 @@ local M = {}
 ---@field hl string
 ---@field line_hl string
 
----@class DiffnotesKeymaps
+---@class ReviewKeymaps
 ---@field add_note string
 ---@field add_suggestion string
 ---@field add_issue string
@@ -24,20 +24,20 @@ local M = {}
 ---@field prev_comment string
 ---@field export string
 
----@class DiffnotesExportConfig
+---@class ReviewExportConfig
 ---@field context_lines number
 ---@field include_file_stats boolean
 
----@class DiffnotesCodediffConfig
+---@class ReviewCodediffConfig
 ---@field readonly boolean
 
----@type DiffnotesConfig
+---@type ReviewConfig
 M.defaults = {
   comment_types = {
-    note = { key = "n", name = "Note", icon = "📝", hl = "DiffnotesNote", line_hl = "DiffnotesNoteLine" },
-    suggestion = { key = "s", name = "Suggestion", icon = "💡", hl = "DiffnotesSuggestion", line_hl = "DiffnotesSuggestionLine" },
-    issue = { key = "i", name = "Issue", icon = "⚠️", hl = "DiffnotesIssue", line_hl = "DiffnotesIssueLine" },
-    praise = { key = "p", name = "Praise", icon = "✨", hl = "DiffnotesPraise", line_hl = "DiffnotesPraiseLine" },
+    note = { key = "n", name = "Note", icon = "📝", hl = "ReviewNote", line_hl = "ReviewNoteLine" },
+    suggestion = { key = "s", name = "Suggestion", icon = "💡", hl = "ReviewSuggestion", line_hl = "ReviewSuggestionLine" },
+    issue = { key = "i", name = "Issue", icon = "⚠️", hl = "ReviewIssue", line_hl = "ReviewIssueLine" },
+    praise = { key = "p", name = "Praise", icon = "✨", hl = "ReviewPraise", line_hl = "ReviewPraiseLine" },
   },
   keymaps = {
     add_note = "<leader>cn",
@@ -59,15 +59,15 @@ M.defaults = {
   },
 }
 
----@type DiffnotesConfig
+---@type ReviewConfig
 M.config = vim.deepcopy(M.defaults)
 
----@param opts? DiffnotesConfig
+---@param opts? ReviewConfig
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.defaults, opts or {})
 end
 
----@return DiffnotesConfig
+---@return ReviewConfig
 function M.get()
   return M.config
 end
