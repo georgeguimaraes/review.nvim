@@ -5,8 +5,11 @@ Code review annotations for diffview.nvim, optimized for AI feedback loops.
 ## Features
 
 - Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
-- Comments displayed as signs and virtual text
-- Export all comments as structured Markdown for pasting into AI conversations
+- Comments displayed as signs, line highlights, and virtual text
+- Unified diff view by default (toggle with `t`)
+- Comments persist per branch (stored in `~/.local/share/nvim/diffnotes/`)
+- Auto-export comments to clipboard when closing
+- Export format optimized for AI conversations
 - Built on top of diffview.nvim
 
 ## Requirements
@@ -62,7 +65,8 @@ Using lazy.nvim:
 | `]c` | Jump to next comment |
 | `[c` | Jump to previous comment |
 | `<C-e>` | Export comments to clipboard |
-| `q` | Close diffview |
+| `C` | Clear all comments |
+| `q` | Close and copy comments to clipboard |
 
 **Edit mode** (when `readonly = false`):
 | Key | Action |
