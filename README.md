@@ -32,6 +32,11 @@ Using lazy.nvim:
     "esmuellert/codediff.nvim",
     "MunifTanjim/nui.nvim",
   },
+  cmd = { "Review" },
+  keys = {
+    { "<leader>r", "<cmd>Review<cr>", desc = "Review" },
+    { "<leader>R", "<cmd>Review commits<cr>", desc = "Review commits" },
+  },
   config = function()
     require("review").setup()
   end,
