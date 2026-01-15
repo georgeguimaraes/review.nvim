@@ -1,0 +1,27 @@
+{
+  "pull-request-header": ":rocket: Want to release this?",
+  "pull-request-title-pattern": "chore(main): release ${version}",
+  "include-v-in-tag": true,
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "always-bump-patch": true,
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "changelog-sections": [
+        {"type": "feat", "section": "Features", "hidden": false},
+        {"type": "fix", "section": "Bug Fixes", "hidden": false},
+        {"type": "chore", "section": "Miscellaneous", "hidden": false},
+        {"type": "docs", "section": "Documentation", "hidden": false},
+        {"type": "refactor", "section": "Code Refactoring", "hidden": false},
+        {"type": "test", "section": "Tests", "hidden": false},
+        {"type": "build", "section": "Build System", "hidden": false},
+        {"type": "ci", "section": "Continuous Integration", "hidden": false},
+        {"type": "perf", "section": "Performance Improvements", "hidden": false},
+        {"type": "style", "section": "Styles", "hidden": true},
+        {"type": "revert", "section": "Reverts", "hidden": false}
+      ]
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
