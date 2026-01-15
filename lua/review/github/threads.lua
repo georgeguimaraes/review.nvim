@@ -297,7 +297,7 @@ function M.show_thread(thread)
   -- Footer
   table.insert(lines, "")
   table.insert(lines, string.rep("─", 50))
-  table.insert(lines, "[r]eply  [R]esolve  [q]uit")
+  table.insert(lines, "[r]eply  [R]esolve  [e]dit  [d]elete  [+]react  [q]uit")
   table.insert(highlights, { line = #lines, hl = "Comment" })
 
   -- Calculate popup size
@@ -366,6 +366,24 @@ function M.show_thread(thread)
     thread_popup:unmount()
     thread_popup = nil
     M.toggle_resolve(thread)
+  end, map_opts)
+
+  thread_popup:map("n", "e", function()
+    thread_popup:unmount()
+    thread_popup = nil
+    M.edit_comment(thread)
+  end, map_opts)
+
+  thread_popup:map("n", "d", function()
+    thread_popup:unmount()
+    thread_popup = nil
+    M.delete_comment(thread)
+  end, map_opts)
+
+  thread_popup:map("n", "+", function()
+    thread_popup:unmount()
+    thread_popup = nil
+    M.add_reaction(thread)
   end, map_opts)
 end
 
@@ -636,6 +654,358 @@ function M.start_suggestion_thread()
     M.fetch(pr.number)
     M.render_all()
   end)
+end
+
+---Get lines content from buffer for a range
+---@param start_line number
+---@param end_line number
+---@return string[]
+local function get_lines_content(start_line, end_line)
+  local current_buf = vim.api.nvim_get_current_buf()
+  return vim.api.nvim_buf_get_lines(current_buf, start_line - 1, end_line, false)
+end
+
+---Start a multi-line thread (visual selection)
+function M.start_multiline_thread()
+  local hooks = require("review.hooks")
+  local file = hooks.get_cursor_position()
+
+  if not file then
+    vim.notify("Could not determine cursor position", vim.log.levels.WARN, { title = "Review" })
+    return
+  end
+
+  -- Get visual selection range
+  local start_line = vim.fn.line("'<")
+  local end_line = vim.fn.line("'>")
+
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
+  end
+
+  local github = require("review.github")
+  local pr = github.get_current_pr()
+  if not pr then
+    vim.notify("No active PR review", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  local pr_node_id = api.get_pr_node_id(pr.number)
+  if not pr_node_id then
+    vim.notify("Failed to get PR ID", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  vim.ui.input({ prompt = string.format("Comment on lines %d-%d: ", start_line, end_line) }, function(input)
+    if not input or input == "" then
+      return
+    end
+
+    local ok, err = api.add_review_thread(pr_node_id, file, end_line, input, start_line)
+    if not ok then
+      vim.notify("Failed to create thread: " .. (err or "unknown error"), vim.log.levels.ERROR, { title = "Review" })
+      return
+    end
+
+    vim.notify("Multi-line thread created", vim.log.levels.INFO, { title = "Review" })
+
+    M.fetch(pr.number)
+    M.render_all()
+  end)
+end
+
+---Start a multi-line suggestion (visual selection)
+function M.start_multiline_suggestion()
+  local hooks = require("review.hooks")
+  local file = hooks.get_cursor_position()
+
+  if not file then
+    vim.notify("Could not determine cursor position", vim.log.levels.WARN, { title = "Review" })
+    return
+  end
+
+  -- Get visual selection range
+  local start_line = vim.fn.line("'<")
+  local end_line = vim.fn.line("'>")
+
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
+  end
+
+  local github = require("review.github")
+  local pr = github.get_current_pr()
+  if not pr then
+    vim.notify("No active PR review", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  local pr_node_id = api.get_pr_node_id(pr.number)
+  if not pr_node_id then
+    vim.notify("Failed to get PR ID", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  -- Get selected lines as default
+  local selected_lines = get_lines_content(start_line, end_line)
+  local default_content = table.concat(selected_lines, "\n")
+
+  vim.ui.input({
+    prompt = string.format("Suggestion for lines %d-%d: ", start_line, end_line),
+    default = default_content,
+  }, function(replacement)
+    if replacement == nil then
+      return
+    end
+
+    -- Build suggestion body
+    local body = "```suggestion\n" .. replacement .. "\n```"
+
+    local ok, err = api.add_review_thread(pr_node_id, file, end_line, body, start_line)
+    if not ok then
+      vim.notify("Failed to create suggestion: " .. (err or "unknown error"), vim.log.levels.ERROR, { title = "Review" })
+      return
+    end
+
+    vim.notify("Multi-line suggestion created", vim.log.levels.INFO, { title = "Review" })
+
+    M.fetch(pr.number)
+    M.render_all()
+  end)
+end
+
+---Edit a comment in a thread (edits the last comment you authored)
+---@param thread GitHubThread
+function M.edit_comment(thread)
+  local current_user = api.get_current_user()
+  if not current_user then
+    vim.notify("Could not determine current user", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  -- Find last comment by current user
+  local my_comment = nil
+  for i = #thread.comments, 1, -1 do
+    if thread.comments[i].author == current_user then
+      my_comment = thread.comments[i]
+      break
+    end
+  end
+
+  if not my_comment then
+    vim.notify("No comment to edit (you haven't commented)", vim.log.levels.WARN, { title = "Review" })
+    return
+  end
+
+  vim.ui.input({
+    prompt = "Edit comment: ",
+    default = my_comment.body,
+  }, function(new_body)
+    if new_body == nil or new_body == "" then
+      return
+    end
+
+    local github = require("review.github")
+    local pr = github.get_current_pr()
+    if not pr then
+      return
+    end
+
+    local ok, err = api.update_comment(my_comment.id, new_body)
+    if not ok then
+      vim.notify("Failed to edit comment: " .. (err or "unknown error"), vim.log.levels.ERROR, { title = "Review" })
+      return
+    end
+
+    vim.notify("Comment updated", vim.log.levels.INFO, { title = "Review" })
+
+    M.fetch(pr.number)
+    M.render_all()
+  end)
+end
+
+---Delete a comment in a thread (deletes the last comment you authored)
+---@param thread GitHubThread
+function M.delete_comment(thread)
+  local current_user = api.get_current_user()
+  if not current_user then
+    vim.notify("Could not determine current user", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  -- Find last comment by current user
+  local my_comment = nil
+  for i = #thread.comments, 1, -1 do
+    if thread.comments[i].author == current_user then
+      my_comment = thread.comments[i]
+      break
+    end
+  end
+
+  if not my_comment then
+    vim.notify("No comment to delete (you haven't commented)", vim.log.levels.WARN, { title = "Review" })
+    return
+  end
+
+  vim.ui.select({ "Yes", "No" }, { prompt = "Delete your comment?" }, function(choice)
+    if choice ~= "Yes" then
+      return
+    end
+
+    local github = require("review.github")
+    local pr = github.get_current_pr()
+    if not pr then
+      return
+    end
+
+    local ok, err = api.delete_comment(my_comment.id)
+    if not ok then
+      vim.notify("Failed to delete comment: " .. (err or "unknown error"), vim.log.levels.ERROR, { title = "Review" })
+      return
+    end
+
+    vim.notify("Comment deleted", vim.log.levels.INFO, { title = "Review" })
+
+    M.fetch(pr.number)
+    M.render_all()
+  end)
+end
+
+---Add reaction to last comment in thread
+---@param thread GitHubThread
+function M.add_reaction(thread)
+  if not thread.comments or #thread.comments == 0 then
+    vim.notify("No comments to react to", vim.log.levels.WARN, { title = "Review" })
+    return
+  end
+
+  local reactions = {
+    { label = "👍 Thumbs up", value = "THUMBS_UP" },
+    { label = "👎 Thumbs down", value = "THUMBS_DOWN" },
+    { label = "😄 Laugh", value = "LAUGH" },
+    { label = "🎉 Hooray", value = "HOORAY" },
+    { label = "😕 Confused", value = "CONFUSED" },
+    { label = "❤️ Heart", value = "HEART" },
+    { label = "🚀 Rocket", value = "ROCKET" },
+    { label = "👀 Eyes", value = "EYES" },
+  }
+
+  local labels = {}
+  for _, r in ipairs(reactions) do
+    table.insert(labels, r.label)
+  end
+
+  vim.ui.select(labels, { prompt = "Add reaction:" }, function(choice, idx)
+    if not choice or not idx then
+      return
+    end
+
+    local github = require("review.github")
+    local pr = github.get_current_pr()
+    if not pr then
+      return
+    end
+
+    local last_comment = thread.comments[#thread.comments]
+    local ok, err = api.add_reaction(last_comment.id, reactions[idx].value)
+    if not ok then
+      vim.notify("Failed to add reaction: " .. (err or "unknown error"), vim.log.levels.ERROR, { title = "Review" })
+      return
+    end
+
+    vim.notify("Reaction added", vim.log.levels.INFO, { title = "Review" })
+
+    M.fetch(pr.number)
+    M.render_all()
+  end)
+end
+
+---Show PR description popup
+function M.show_pr_description()
+  local github = require("review.github")
+  local pr = github.get_current_pr()
+  if not pr then
+    vim.notify("No active PR review", vim.log.levels.ERROR, { title = "Review" })
+    return
+  end
+
+  local lines = {}
+  local highlights = {}
+
+  -- Title
+  table.insert(lines, string.format("#%d %s", pr.number, pr.title))
+  table.insert(highlights, { line = 1, hl = "Title" })
+
+  -- Meta
+  table.insert(lines, "")
+  table.insert(lines, string.format("Author: @%s", pr.author))
+  table.insert(lines, string.format("Branch: %s → %s", pr.head_ref, pr.base_ref))
+  if pr.additions and pr.deletions then
+    table.insert(lines, string.format("Changes: +%d -%d (%d files)", pr.additions, pr.deletions, pr.changed_files or 0))
+  end
+  table.insert(lines, string.format("URL: %s", pr.url))
+
+  -- Body
+  table.insert(lines, "")
+  table.insert(lines, string.rep("─", 60))
+  table.insert(lines, "")
+
+  if pr.body and pr.body ~= "" then
+    for _, line in ipairs(vim.split(pr.body, "\n")) do
+      table.insert(lines, line)
+    end
+  else
+    table.insert(lines, "(no description)")
+    table.insert(highlights, { line = #lines, hl = "Comment" })
+  end
+
+  -- Calculate size
+  local max_width = 70
+  for _, line in ipairs(lines) do
+    max_width = math.max(max_width, vim.fn.strdisplaywidth(line) + 4)
+  end
+  max_width = math.min(max_width, vim.o.columns - 10)
+  local height = math.min(#lines + 2, vim.o.lines - 10)
+
+  local popup = Popup({
+    position = "50%",
+    size = {
+      width = max_width,
+      height = height,
+    },
+    border = {
+      style = "rounded",
+      text = {
+        top = " PR Description ",
+        top_align = "center",
+        bottom = " q to close ",
+        bottom_align = "center",
+      },
+    },
+    buf_options = {
+      modifiable = false,
+      buftype = "nofile",
+    },
+    win_options = {
+      wrap = true,
+    },
+  })
+
+  popup:mount()
+
+  local buf = popup.bufnr
+  vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+
+  -- Apply highlights
+  local hl_ns = vim.api.nvim_create_namespace("review_pr_desc")
+  for _, hl_info in ipairs(highlights) do
+    vim.api.nvim_buf_add_highlight(buf, hl_ns, hl_info.hl, hl_info.line - 1, 0, -1)
+  end
+
+  local map_opts = { noremap = true, nowait = true }
+  popup:map("n", "q", function() popup:unmount() end, map_opts)
+  popup:map("n", "<Esc>", function() popup:unmount() end, map_opts)
 end
 
 return M

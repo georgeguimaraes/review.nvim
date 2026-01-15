@@ -57,7 +57,7 @@ end
 ---@return PRContext|nil
 function M.get_pr(number)
   local cmd = string.format(
-    "gh pr view %d --json number,title,author,baseRefName,baseRefOid,headRefName,headRefOid,url",
+    "gh pr view %d --json number,title,body,author,baseRefName,baseRefOid,headRefName,headRefOid,url,additions,deletions,changedFiles",
     number
   )
   local result = vim.fn.system(cmd)
@@ -80,12 +80,16 @@ function M.get_pr(number)
     owner = repo_info.owner,
     repo = repo_info.repo,
     title = pr.title,
+    body = pr.body,
     author = pr.author.login,
     base_ref = pr.baseRefName,
     head_ref = pr.headRefName,
     base_sha = pr.baseRefOid,
     head_sha = pr.headRefOid,
     url = pr.url,
+    additions = pr.additions,
+    deletions = pr.deletions,
+    changed_files = pr.changedFiles,
     merge_base = nil, -- filled in by get_merge_base
   }
 end
@@ -271,15 +275,16 @@ function M.get_pr_node_id(number)
   return vim.trim(result)
 end
 
----Start a new review thread on a specific line
+---Start a new review thread on a specific line or range
 ---@param pr_id string PR node ID
 ---@param path string File path relative to repo root
----@param line number Line number in the diff
+---@param line number End line number in the diff
 ---@param body string Comment body
+---@param start_line? number Start line for multi-line comments
 ---@param side? "LEFT"|"RIGHT" Diff side (default RIGHT for new changes)
 ---@return boolean success
 ---@return string? error
-function M.add_review_thread(pr_id, path, line, body, side)
+function M.add_review_thread(pr_id, path, line, body, start_line, side)
   local mutation = [[
 mutation($input: AddPullRequestReviewInput!) {
   addPullRequestReview(input: $input) {
@@ -290,17 +295,23 @@ mutation($input: AddPullRequestReviewInput!) {
 }
 ]]
 
+  local comment = {
+    path = path,
+    line = line,
+    side = side or "RIGHT",
+    body = body,
+  }
+
+  -- Add startLine for multi-line comments
+  if start_line and start_line ~= line then
+    comment.startLine = start_line
+    comment.startSide = side or "RIGHT"
+  end
+
   local input = {
     pullRequestId = pr_id,
     event = "COMMENT",
-    comments = {
-      {
-        path = path,
-        line = line,
-        side = side or "RIGHT",
-        body = body,
-      },
-    },
+    comments = { comment },
   }
 
   local variables = vim.json.encode({ input = input })
@@ -316,6 +327,126 @@ mutation($input: AddPullRequestReviewInput!) {
   end
 
   return true, nil
+end
+
+---Update a comment body
+---@param comment_id string Comment node ID
+---@param body string New body text
+---@return boolean success
+---@return string? error
+function M.update_comment(comment_id, body)
+  local mutation = [[
+mutation($input: UpdatePullRequestReviewCommentInput!) {
+  updatePullRequestReviewComment(input: $input) {
+    pullRequestReviewComment {
+      id
+    }
+  }
+}
+]]
+
+  local variables = vim.json.encode({
+    input = {
+      pullRequestReviewCommentId = comment_id,
+      body = body,
+    },
+  })
+
+  local cmd = string.format(
+    "gh api graphql -f query=%s -f variables=%s",
+    vim.fn.shellescape(mutation),
+    vim.fn.shellescape(variables)
+  )
+
+  local result = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    return false, vim.trim(result)
+  end
+
+  return true, nil
+end
+
+---Delete a comment
+---@param comment_id string Comment node ID
+---@return boolean success
+---@return string? error
+function M.delete_comment(comment_id)
+  local mutation = [[
+mutation($input: DeletePullRequestReviewCommentInput!) {
+  deletePullRequestReviewComment(input: $input) {
+    pullRequestReviewComment {
+      id
+    }
+  }
+}
+]]
+
+  local variables = vim.json.encode({
+    input = {
+      id = comment_id,
+    },
+  })
+
+  local cmd = string.format(
+    "gh api graphql -f query=%s -f variables=%s",
+    vim.fn.shellescape(mutation),
+    vim.fn.shellescape(variables)
+  )
+
+  local result = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    return false, vim.trim(result)
+  end
+
+  return true, nil
+end
+
+---Add a reaction to a comment
+---@param comment_id string Comment node ID
+---@param reaction string Reaction type (THUMBS_UP, THUMBS_DOWN, LAUGH, HOORAY, CONFUSED, HEART, ROCKET, EYES)
+---@return boolean success
+---@return string? error
+function M.add_reaction(comment_id, reaction)
+  local mutation = [[
+mutation($input: AddReactionInput!) {
+  addReaction(input: $input) {
+    reaction {
+      content
+    }
+  }
+}
+]]
+
+  local variables = vim.json.encode({
+    input = {
+      subjectId = comment_id,
+      content = reaction,
+    },
+  })
+
+  local cmd = string.format(
+    "gh api graphql -f query=%s -f variables=%s",
+    vim.fn.shellescape(mutation),
+    vim.fn.shellescape(variables)
+  )
+
+  local result = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    return false, vim.trim(result)
+  end
+
+  return true, nil
+end
+
+---Get current authenticated user
+---@return string|nil
+function M.get_current_user()
+  local cmd = "gh api user -q .login"
+  local result = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    return nil
+  end
+  return vim.trim(result)
 end
 
 return M

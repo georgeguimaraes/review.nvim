@@ -88,9 +88,22 @@ Using lazy.nvim:
 | `gC` | Show GitHub thread at cursor |
 | `gn` | Start new GitHub thread at cursor |
 | `gS` | Start GitHub suggestion (one-click apply) |
+| `gn` (visual) | Multi-line comment on selection |
+| `gS` (visual) | Multi-line suggestion on selection |
+| `gp` | Show PR description |
 | `]t` | Jump to next GitHub thread |
 | `[t` | Jump to previous GitHub thread |
 | `gs` | Submit review to GitHub |
+
+**Thread popup keymaps** (when viewing a thread with `gC`):
+| Key | Action |
+|-----|--------|
+| `r` | Reply to thread |
+| `R` | Toggle resolved status |
+| `e` | Edit your last comment |
+| `d` | Delete your last comment |
+| `+` | Add reaction to last comment |
+| `q` | Close popup |
 
 **Edit mode** (when `readonly = false`):
 | Key | Action |
@@ -175,7 +188,11 @@ This will:
 
 ### Viewing GitHub Threads
 
-Existing PR comments show as purple `◆` signs (or gray `✓` if resolved). Press `gC` to view the full thread with all replies and reactions.
+Existing PR comments show as purple `◆` signs (or gray `✓` if resolved). Press `gC` to view the full thread with all replies and reactions. From the thread popup you can reply, resolve/unresolve, edit or delete your comments, and add reactions.
+
+### Multi-line Comments
+
+Select lines in visual mode, then press `gn` for a multi-line comment or `gS` for a multi-line suggestion. GitHub will highlight the entire range in the PR.
 
 ### Submitting Reviews
 

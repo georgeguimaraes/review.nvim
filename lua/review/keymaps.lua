@@ -112,6 +112,25 @@ local function set_buffer_keymaps(bufnr)
     threads.start_suggestion_thread()
   end, vim.tbl_extend("force", opts, { desc = "Start GitHub suggestion" }))
 
+  -- Visual mode for multi-line comments/suggestions
+  vim.keymap.set("v", "gn", function()
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+    local threads = require("review.github.threads")
+    threads.start_multiline_thread()
+  end, vim.tbl_extend("force", opts, { desc = "Start multi-line GitHub thread" }))
+
+  vim.keymap.set("v", "gS", function()
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+    local threads = require("review.github.threads")
+    threads.start_multiline_suggestion()
+  end, vim.tbl_extend("force", opts, { desc = "Start multi-line GitHub suggestion" }))
+
+  -- PR description
+  vim.keymap.set("n", "gp", function()
+    local threads = require("review.github.threads")
+    threads.show_pr_description()
+  end, vim.tbl_extend("force", opts, { desc = "Show PR description" }))
+
   -- Submit review to GitHub
   vim.keymap.set("n", "gs", function()
     require("review.github.submit").show_submit_ui()
