@@ -57,6 +57,17 @@ local function fetch_commits(limit)
   return parsed
 end
 
+local ns_id = nil
+
+local function format_line(commit)
+  local marker = selected[commit.hash] and "[x]" or "[ ]"
+  local line = string.format("%s %s %s (%s, %s)", marker, commit.short_hash, commit.message, commit.author, commit.date)
+  if #line > 120 then
+    line = line:sub(1, 117) .. "..."
+  end
+  return line
+end
+
 local function render_lines()
   if not popup then
     return
@@ -64,21 +75,9 @@ local function render_lines()
 
   local buf = popup.bufnr
   local lines = {}
-  local highlights = {}
 
-  for i, commit in ipairs(commits) do
-    local marker = selected[commit.hash] and "[x]" or "[ ]"
-    local line = string.format("%s %s %s (%s, %s)", marker, commit.short_hash, commit.message, commit.author, commit.date)
-    -- Truncate long lines
-    if #line > 120 then
-      line = line:sub(1, 117) .. "..."
-    end
-    table.insert(lines, line)
-
-    -- Highlight selected lines
-    if selected[commit.hash] then
-      table.insert(highlights, { line = i, hl = "Visual" })
-    end
+  for _, commit in ipairs(commits) do
+    table.insert(lines, format_line(commit))
   end
 
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
@@ -86,20 +85,42 @@ local function render_lines()
   vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 
   -- Apply highlights
-  local ns = vim.api.nvim_create_namespace("review_picker")
-  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-  for _, hl in ipairs(highlights) do
-    vim.api.nvim_buf_add_highlight(buf, ns, hl.hl, hl.line - 1, 0, -1)
+  ns_id = vim.api.nvim_create_namespace("review_picker")
+  vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
+  for i, commit in ipairs(commits) do
+    if selected[commit.hash] then
+      vim.api.nvim_buf_add_highlight(buf, ns_id, "Visual", i - 1, 0, -1)
+    end
+  end
+end
+
+local function update_line(line_num)
+  if not popup then return end
+  local buf = popup.bufnr
+  local commit = commits[line_num]
+  if not commit then return end
+
+  -- Update just this line's text
+  vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, line_num - 1, line_num, false, { format_line(commit) })
+  vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+
+  -- Update highlight
+  if ns_id then
+    vim.api.nvim_buf_clear_namespace(buf, ns_id, line_num - 1, line_num)
+    if selected[commit.hash] then
+      vim.api.nvim_buf_add_highlight(buf, ns_id, "Visual", line_num - 1, 0, -1)
+    end
   end
 end
 
 local function toggle_selection()
   local cursor = vim.api.nvim_win_get_cursor(0)
-  local line = cursor[1]
-  local commit = commits[line]
+  local line_num = cursor[1]
+  local commit = commits[line_num]
   if commit then
     selected[commit.hash] = not selected[commit.hash]
-    render_lines()
+    update_line(line_num)
   end
 end
 
