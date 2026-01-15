@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.2.0...v1.3.0) (2026-01-15)
+
+
+### Features
+
+* multi-line comments with box-style virtual text ([693b9f2](https://github.com/georgeguimaraes/review.nvim/commit/693b9f25c7ba7ab53c6bb4f62e26fcc5eea42ac7))
+
+
+### Bug Fixes
+
+* issue keymaps not cleared on close ([#5](https://github.com/georgeguimaraes/review.nvim/issues/5)) ([98a1986](https://github.com/georgeguimaraes/review.nvim/commit/98a19868c389c03e007c8cbcb2e31d01fc020a6f))
+
 ## [1.2.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.1.0...v1.2.0) (2026-01-15)
 
 
