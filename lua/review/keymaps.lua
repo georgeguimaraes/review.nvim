@@ -34,6 +34,25 @@ local function set_buffer_keymaps(bufnr)
     vim.keymap.set("n", km.edit_comment, function() comments.edit_at_cursor() end, vim.tbl_extend("force", opts, { desc = "Edit comment" }))
   end
 
+  -- Helper to jump to first hunk in current file
+  local function jump_to_first_hunk()
+    local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
+    if not ok then return end
+    local tabpage = vim.api.nvim_get_current_tabpage()
+    local session = lifecycle.get_session(tabpage)
+    if not session or not session.stored_diff_result then return end
+    local diff_result = session.stored_diff_result
+    if #diff_result.changes == 0 then return end
+
+    local orig_buf, mod_buf = lifecycle.get_buffers(tabpage)
+    local current_buf = vim.api.nvim_get_current_buf()
+    local is_original = current_buf == orig_buf
+
+    local first_hunk = diff_result.changes[1]
+    local target_line = is_original and first_hunk.original.start_line or first_hunk.modified.start_line
+    pcall(vim.api.nvim_win_set_cursor, 0, { target_line, 0 })
+  end
+
   -- File navigation (Tab/S-Tab to cycle files)
   vim.keymap.set("n", "<Tab>", function()
     local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
@@ -42,6 +61,8 @@ local function set_buffer_keymaps(bufnr)
     local explorer_obj = lifecycle.get_explorer(tabpage)
     if explorer_obj then
       require("codediff.ui.explorer").navigate_next(explorer_obj)
+      -- Jump to first hunk after file loads
+      vim.defer_fn(jump_to_first_hunk, 100)
     end
   end, vim.tbl_extend("force", opts, { desc = "Next file" }))
 
@@ -52,6 +73,8 @@ local function set_buffer_keymaps(bufnr)
     local explorer_obj = lifecycle.get_explorer(tabpage)
     if explorer_obj then
       require("codediff.ui.explorer").navigate_prev(explorer_obj)
+      -- Jump to first hunk after file loads
+      vim.defer_fn(jump_to_first_hunk, 100)
     end
   end, vim.tbl_extend("force", opts, { desc = "Previous file" }))
 

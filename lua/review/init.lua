@@ -62,7 +62,7 @@ function M._check_codediff_session()
   keymaps.setup_keymaps(tabpage)
 end
 
-function M.open()
+local function open_codediff_with_revisions(rev1, rev2)
   local ok, _ = pcall(require, "codediff")
   if not ok then
     vim.notify("codediff.nvim is required", vim.log.levels.ERROR, { title = "Review" })
@@ -72,11 +72,14 @@ function M.open()
   -- Load persisted comments
   store.load()
 
-  -- Open CodeDiff in explorer mode
-  vim.cmd("CodeDiff")
+  -- Open CodeDiff
+  if rev1 and rev2 then
+    vim.cmd("CodeDiff " .. rev1 .. " " .. rev2)
+  else
+    vim.cmd("CodeDiff")
+  end
 
   -- Wait for CodeDiff to initialize, then set up our hooks
-  -- Try multiple times as session may take time to initialize
   local attempts = 0
   local max_attempts = 5
   local function try_setup()
@@ -95,6 +98,17 @@ function M.open()
     end
   end
   vim.defer_fn(try_setup, 200)
+end
+
+function M.open()
+  open_codediff_with_revisions(nil, nil)
+end
+
+function M.open_commits()
+  local picker = require("review.picker")
+  picker.open(function(rev1, rev2)
+    open_codediff_with_revisions(rev1, rev2)
+  end)
 end
 
 function M.close()

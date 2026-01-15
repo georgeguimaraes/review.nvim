@@ -12,6 +12,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Auto-export comments to clipboard when closing
 - Export format optimized for AI conversations
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
+- Commit picker modal to select specific commits to review
 - Built on top of codediff.nvim
 
 ## Requirements
@@ -42,6 +43,7 @@ Using lazy.nvim:
 ```vim
 :Review              " Open codediff with comment keymaps (default)
 :Review open         " Same as above
+:Review commits      " Select commits to review (picker modal)
 :Review close        " Close and export comments to clipboard
 :Review export       " Export comments to clipboard
 :Review preview      " Preview exported markdown in split

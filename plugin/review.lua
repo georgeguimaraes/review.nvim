@@ -5,6 +5,7 @@ vim.g.loaded_review = true
 
 local subcommands = {
   open = { fn = function() require("review").open() end, desc = "Open codediff with review" },
+  commits = { fn = function() require("review").open_commits() end, desc = "Select commits to review" },
   close = { fn = function() require("review").close() end, desc = "Close and export to clipboard" },
   export = { fn = function() require("review").export() end, desc = "Export comments to clipboard" },
   preview = { fn = function() require("review").preview() end, desc = "Preview exported markdown" },
