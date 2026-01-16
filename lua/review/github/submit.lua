@@ -2,31 +2,21 @@ local M = {}
 
 local api = require("review.github.api")
 local Popup = require("nui.popup")
-local Input = require("nui.input")
 
 ---@type any
 local submit_popup = nil
 
----Map review.nvim comment types to GitHub review events
----@type table<string, string>
-local type_to_event = {
-  issue = "REQUEST_CHANGES",
-  suggestion = "COMMENT",
-  note = "COMMENT",
-  praise = "APPROVE",
-}
-
----Convert local comments to GitHub review comments format
+---Convert local comments to GitHub review threads format
 ---@param comments table[]
 ---@return { path: string, line: number, side: string, body: string }[]
-local function convert_comments(comments)
-  local github_comments = {}
+local function convert_to_threads(comments)
+  local threads = {}
 
   for _, comment in ipairs(comments) do
     local type_info = require("review.config").get().comment_types[comment.type]
     local prefix = type_info and string.format("[%s] ", string.upper(type_info.name)) or ""
 
-    table.insert(github_comments, {
+    table.insert(threads, {
       path = comment.file,
       line = comment.line,
       side = "RIGHT", -- Comments on new changes (HEAD side of the diff)
@@ -34,7 +24,7 @@ local function convert_comments(comments)
     })
   end
 
-  return github_comments
+  return threads
 end
 
 ---Determine the suggested review event based on comment types
@@ -74,11 +64,6 @@ function M.show_submit_ui()
   local store = require("review.store")
   local comments = store.get_all()
 
-  if #comments == 0 then
-    vim.notify("No comments to submit", vim.log.levels.WARN, { title = "Review" })
-    return
-  end
-
   -- Get PR node ID for mutation
   local pr_node_id = api.get_pr_node_id(pr.number)
   if not pr_node_id then
@@ -93,7 +78,11 @@ function M.show_submit_ui()
   table.insert(lines, string.format("PR #%d: %s", pr.number, pr.title))
   table.insert(lines, string.rep("─", 50))
   table.insert(lines, "")
-  table.insert(lines, string.format("Comments to submit: %d", #comments))
+  if #comments > 0 then
+    table.insert(lines, string.format("Comments to submit: %d", #comments))
+  else
+    table.insert(lines, "No local comments (review body only)")
+  end
   table.insert(lines, "")
 
   for _, comment in ipairs(comments) do
@@ -204,9 +193,9 @@ end
 function M._do_submit(pr_node_id, pr_number, event, body, comments)
   vim.notify("Submitting review...", vim.log.levels.INFO, { title = "Review" })
 
-  local github_comments = convert_comments(comments)
+  local threads = convert_to_threads(comments)
 
-  local ok, err = api.submit_review(pr_node_id, event, body, github_comments)
+  local ok, err = api.submit_review(pr_node_id, event, body, threads)
 
   if not ok then
     vim.notify("Failed to submit review: " .. (err or "unknown error"), vim.log.levels.ERROR, { title = "Review" })
@@ -219,23 +208,27 @@ function M._do_submit(pr_node_id, pr_number, event, body, comments)
     REQUEST_CHANGES = "requested changes on",
   }
 
-  vim.notify(
-    string.format("Successfully %s PR #%d with %d comment(s)", event_names[event] or "reviewed", pr_number, #comments),
-    vim.log.levels.INFO,
-    { title = "Review" }
-  )
+  local msg
+  if #comments > 0 then
+    msg = string.format("Successfully %s PR #%d with %d comment(s)", event_names[event] or "reviewed", pr_number, #comments)
+  else
+    msg = string.format("Successfully %s PR #%d", event_names[event] or "reviewed", pr_number)
+  end
+  vim.notify(msg, vim.log.levels.INFO, { title = "Review" })
 
-  -- Ask to clear local comments
-  vim.ui.select({ "Yes", "No" }, {
-    prompt = "Clear local comments?",
-  }, function(choice)
-    if choice == "Yes" then
-      local store = require("review.store")
-      store.clear()
-      require("review.marks").clear_all()
-      vim.notify("Local comments cleared", vim.log.levels.INFO, { title = "Review" })
-    end
-  end)
+  -- Ask to clear local comments if there were any
+  if #comments > 0 then
+    vim.ui.select({ "Yes", "No" }, {
+      prompt = "Clear local comments?",
+    }, function(choice)
+      if choice == "Yes" then
+        local store = require("review.store")
+        store.clear()
+        require("review.marks").clear_all()
+        vim.notify("Local comments cleared", vim.log.levels.INFO, { title = "Review" })
+      end
+    end)
+  end
 end
 
 ---Quick submit with suggested event (no UI)
@@ -250,11 +243,6 @@ function M.quick_submit()
 
   local store = require("review.store")
   local comments = store.get_all()
-
-  if #comments == 0 then
-    vim.notify("No comments to submit", vim.log.levels.WARN, { title = "Review" })
-    return
-  end
 
   local pr_node_id = api.get_pr_node_id(pr.number)
   if not pr_node_id then

@@ -238,14 +238,14 @@ query($owner: String!, $repo: String!, $number: Int!) {
   return threads
 end
 
----Submit a review
+---Submit a review with inline thread comments
 ---@param pr_id string PR node ID
 ---@param event "APPROVE"|"REQUEST_CHANGES"|"COMMENT"
 ---@param body? string Overall review body
----@param comments? { path: string, line: number, body: string }[]
+---@param threads? { path: string, line: number, side?: string, body: string }[]
 ---@return boolean success
 ---@return string? error
-function M.submit_review(pr_id, event, body, comments)
+function M.submit_review(pr_id, event, body, threads)
   local mutation = [[
 mutation($input: AddPullRequestReviewInput!) {
   addPullRequestReview(input: $input) {
@@ -264,17 +264,24 @@ mutation($input: AddPullRequestReviewInput!) {
   if body and body ~= "" then
     input.body = body
   end
-  if comments and #comments > 0 then
-    input.comments = comments
+  if threads and #threads > 0 then
+    input.threads = threads
   end
 
-  local variables = vim.json.encode({ input = input })
-  local cmd = string.format(
-    "gh api graphql -f query=%s -f variables=%s",
-    vim.fn.shellescape(mutation),
-    vim.fn.shellescape(variables)
-  )
+  local request_body = vim.json.encode({
+    query = mutation,
+    variables = { input = input },
+  })
 
+  local tmpfile = "/tmp/review_nvim_submit.json"
+  local f = io.open(tmpfile, "w")
+  if not f then
+    return false, "Failed to create temp file"
+  end
+  f:write(request_body)
+  f:close()
+
+  local cmd = string.format("gh api graphql --input %s 2>&1", vim.fn.shellescape(tmpfile))
   local result = vim.fn.system(cmd)
   if vim.v.shell_error ~= 0 then
     return false, vim.trim(result)
