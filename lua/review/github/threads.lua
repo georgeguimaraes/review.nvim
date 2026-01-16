@@ -318,6 +318,15 @@ function M.show_hover(bufnr, line)
     table.insert(virt_lines, { { reply_line, "ReviewGitHubVirtText" } })
   end
 
+  -- Hint line
+  local hint_text = "Enter: view • r: reply • R: resolve"
+  local hint_width = vim.fn.strdisplaywidth(hint_text)
+  local hint_padding = content_width - hint_width
+  if hint_padding >= 0 then
+    local hint_line = "│ " .. hint_text .. string.rep(" ", hint_padding) .. " │"
+    table.insert(virt_lines, { { hint_line, "Comment" } })
+  end
+
   -- Bottom border
   local bottom = "╰" .. string.rep("─", content_width + 2) .. "╯"
   table.insert(virt_lines, { { bottom, hl } })
@@ -468,7 +477,7 @@ function M.show_thread(thread)
   -- Footer
   table.insert(lines, "")
   table.insert(lines, string.rep("─", 50))
-  table.insert(lines, "[r]eply  [R]esolve  [e]dit  [d]elete  [+]react  [q]uit")
+  table.insert(lines, "[r]eply  [R]esolve  [e]dit  [d]elete  [+]react  [o]pen  [q]uit")
   table.insert(highlights, { line = #lines, hl = "Comment" })
 
   -- Calculate popup size
@@ -558,6 +567,12 @@ function M.show_thread(thread)
     thread_popup:unmount()
     thread_popup = nil
     M.add_reaction(thread)
+  end, map_opts)
+
+  thread_popup:map("n", "o", function()
+    thread_popup:unmount()
+    thread_popup = nil
+    M.open_thread_in_browser()
   end, map_opts)
 end
 
@@ -1184,7 +1199,7 @@ function M.show_pr_description()
       text = {
         top = " PR Description ",
         top_align = "center",
-        bottom = " q to close ",
+        bottom = " q: close • o: open in browser ",
         bottom_align = "center",
       },
     },
@@ -1216,6 +1231,11 @@ function M.show_pr_description()
   local map_opts = { noremap = true, nowait = true }
   popup:map("n", "q", function() popup:unmount() end, map_opts)
   popup:map("n", "<Esc>", function() popup:unmount() end, map_opts)
+  popup:map("n", "o", function()
+    popup:unmount()
+    vim.fn.system(string.format("open %s", vim.fn.shellescape(pr.url)))
+    vim.notify("Opened PR in browser", vim.log.levels.INFO, { title = "Review" })
+  end, map_opts)
 end
 
 return M

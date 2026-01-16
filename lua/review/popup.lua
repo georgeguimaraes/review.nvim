@@ -61,8 +61,10 @@ function M.open(initial_type, initial_text, callback, current_line, allowed_type
     border = {
       style = "rounded",
       text = {
-        top = " Comment (C-s: submit) ",
+        top = " Comment ",
         top_align = "center",
+        bottom = " C-s: submit • Esc: cancel ",
+        bottom_align = "center",
       },
     },
     win_options = {
