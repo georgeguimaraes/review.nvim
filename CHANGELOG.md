@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.4.0...v1.4.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* enable syntax highlighting when reviewing commits ([#11](https://github.com/georgeguimaraes/review.nvim/issues/11)) ([d50dc2f](https://github.com/georgeguimaraes/review.nvim/commit/d50dc2f307d93cfc8672d5ee8aa27487f1b82bd7))
+
 ## [1.4.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.3.0...v1.4.0) (2026-01-15)
 
 
