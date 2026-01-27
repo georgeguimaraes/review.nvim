@@ -23,9 +23,16 @@ local M = {}
 ---@field next_comment string
 ---@field prev_comment string
 
+---@class ReviewExportFileConfig
+---@field enabled boolean
+---@field filename string
+---@field dir string
+---@field import_on_open boolean
+
 ---@class ReviewExportConfig
 ---@field context_lines number
 ---@field include_file_stats boolean
+---@field file ReviewExportFileConfig
 
 ---@class ReviewCodediffConfig
 ---@field readonly boolean
@@ -51,6 +58,12 @@ M.defaults = {
   export = {
     context_lines = 3,
     include_file_stats = true,
+    file = {
+      enabled = true,
+      filename = "CODE_REVIEW.md",
+      dir = ".",
+      import_on_open = true,
+    },
   },
   codediff = {
     readonly = true,

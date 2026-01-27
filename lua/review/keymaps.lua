@@ -89,6 +89,9 @@ local function set_buffer_keymaps(bufnr)
   -- Close and export
   vim.keymap.set("n", "q", function() require("review").close() end, vim.tbl_extend("force", opts, { desc = "Close" }))
 
+  vim.keymap.set("n", "x", function() require("review").write_close() end, vim.tbl_extend("force", opts, { desc = "Write review file and close" }))
+  vim.keymap.set("n", "X", function() require("review").write() end, vim.tbl_extend("force", opts, { desc = "Write review file" }))
+
   -- Toggle readonly mode
   vim.keymap.set("n", "R", function() require("review").toggle_readonly() end, vim.tbl_extend("force", opts, { desc = "Toggle readonly mode" }))
 

@@ -7,6 +7,7 @@ local keymaps = require("review.keymaps")
 local store = require("review.store")
 local export = require("review.export")
 local comments = require("review.comments")
+local file_export = require("review.file")
 
 local initialized = false
 local augroup = nil
@@ -69,8 +70,16 @@ local function open_codediff_with_revisions(rev1, rev2)
     return
   end
 
-  -- Load persisted comments
-  store.load()
+  -- Load persisted comments (file wins when present)
+  local cfg = config.get().export.file
+  if cfg and cfg.enabled and cfg.import_on_open then
+    local loaded_from_file = file_export.load_into_store()
+    if not loaded_from_file then
+      store.load()
+    end
+  else
+    store.load()
+  end
 
   -- Open CodeDiff
   if rev1 and rev2 then
@@ -111,6 +120,11 @@ function M.open_commits()
   end)
 end
 
+function M.close_tab_only()
+  vim.cmd("tabclose")
+  hooks.on_session_closed()
+end
+
 function M.close()
   -- Export comments to clipboard before closing
   local count = store.count()
@@ -122,12 +136,19 @@ function M.close()
   end
 
   -- Close the tab
-  vim.cmd("tabclose")
-  hooks.on_session_closed()
+  M.close_tab_only()
 end
 
 function M.export()
   export.to_clipboard()
+end
+
+function M.write()
+  file_export.write_from_store({ copy = false, close = false })
+end
+
+function M.write_close()
+  file_export.write_from_store({ copy = true, close = true })
 end
 
 function M.preview()

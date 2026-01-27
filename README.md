@@ -11,6 +11,8 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Comments displayed as signs, line highlights, and virtual text
 - Comments persist per branch (stored in `~/.local/share/nvim/review/`)
 - Auto-export comments to clipboard when closing
+- Export comments to a project review file (default: `CODE_REVIEW.md`)
+- Import existing review file on open to restore comments
 - Export format optimized for AI conversations
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
 - Commit picker modal to select specific commits to review
@@ -51,6 +53,8 @@ Using lazy.nvim:
 :Review close        " Close and export comments to clipboard
 :Review export       " Export comments to clipboard
 :Review preview      " Preview exported markdown in split
+:Review write        " Write review markdown file
+:Review write_close  " Write review file, copy to clipboard, and close
 :Review sidekick     " Send comments to sidekick.nvim
 :Review list         " List all comments
 :Review clear        " Clear all comments
@@ -76,6 +80,8 @@ Using lazy.nvim:
 | `S` | Send comments to sidekick.nvim |
 | `<C-r>` | Clear all comments |
 | `q` | Close and export comments to clipboard |
+| `w` | Write review file, copy to clipboard, and close |
+| `W` | Write review file |
 
 **Edit mode** (when `readonly = false`):
 | Key | Action |
@@ -115,6 +121,12 @@ require("review").setup({
   export = {
     context_lines = 3,
     include_file_stats = true,
+    file = {
+      enabled = true,
+      filename = "CODE_REVIEW.md",
+      dir = ".",
+      import_on_open = true,
+    },
   },
   codediff = {
     readonly = true,
@@ -124,16 +136,16 @@ require("review").setup({
 
 ## Export Format
 
-Comments are exported as Markdown optimized for AI consumption:
+Comments are exported as Markdown optimized for AI consumption. When writing to a file, each comment line includes a short inline marker (e.g. `<!--r:id=...-->`) so the plugin can restore comments on the next session without adding a large metadata block.
 
 ```markdown
 I reviewed your code and have the following comments. Please address them.
 
 Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
 
-1. **[ISSUE]** `src/components/Button.tsx:23` - Wrapping onClick creates a new function every render
-2. **[SUGGESTION]** `src/utils/api.ts:45` - Consider using useMemo here
-3. **[PRAISE]** `src/hooks/useAuth.ts:12` - Clean implementation of the auth flow
+1. **[ISSUE]** `src/components/Button.tsx:23` - Wrapping onClick creates a new function every render <!--r:id=comment_1700000000_1-->
+2. **[SUGGESTION]** `src/utils/api.ts:45` - Consider using useMemo here <!--r:id=comment_1700000000_2-->
+3. **[PRAISE]** `src/hooks/useAuth.ts:12` - Clean implementation of the auth flow <!--r:id=comment_1700000000_3-->
 ```
 
 ## Running Tests

@@ -9,6 +9,8 @@ local subcommands = {
   close = { fn = function() require("review").close() end, desc = "Close and export to clipboard" },
   export = { fn = function() require("review").export() end, desc = "Export comments to clipboard" },
   preview = { fn = function() require("review").preview() end, desc = "Preview exported markdown" },
+  write = { fn = function() require("review").write() end, desc = "Write review file" },
+  write_close = { fn = function() require("review").write_close() end, desc = "Write review file and close" },
   sidekick = { fn = function() require("review.export").to_sidekick() end, desc = "Send comments to sidekick.nvim" },
   clear = { fn = function() require("review").clear() end, desc = "Clear all comments" },
   list = { fn = function() require("review.comments").list() end, desc = "List all comments" },

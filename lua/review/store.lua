@@ -22,6 +22,10 @@ local function generate_id()
   return string.format("comment_%d_%d", os.time(), id_counter)
 end
 
+function M.generate_id()
+  return generate_id()
+end
+
 local function persist()
   storage.save(M.comments)
 end
@@ -166,6 +170,21 @@ function M.count()
     count = count + #comments
   end
   return count
+end
+
+function M.replace_all(comments)
+  M.comments = comments or {}
+  id_counter = 0
+  for _, comment_list in pairs(M.comments) do
+    for _, comment in ipairs(comment_list) do
+      local num = tonumber(comment.id and comment.id:match("comment_%d+_(%d+)"))
+      if num and num > id_counter then
+        id_counter = num
+      end
+    end
+  end
+  loaded = true
+  storage.save(M.comments)
 end
 
 function M.clear()
