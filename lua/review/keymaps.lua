@@ -79,18 +79,18 @@ local function set_buffer_keymaps(bufnr)
   end, vim.tbl_extend("force", opts, { desc = "Previous file" }))
 
   -- Common keymaps
-  vim.keymap.set("n", "c", function() comments.list() end, vim.tbl_extend("force", opts, { desc = "List all comments" }))
-  vim.keymap.set("n", "C", function() export.to_clipboard() end, vim.tbl_extend("force", opts, { desc = "Export to clipboard" }))
-  vim.keymap.set("n", "S", function() export.to_sidekick() end, vim.tbl_extend("force", opts, { desc = "Send to sidekick" }))
-  vim.keymap.set("n", "<C-r>", function() require("review").clear() end, vim.tbl_extend("force", opts, { desc = "Clear all comments" }))
+  vim.keymap.set("n", km.list_comments, function() comments.list() end, vim.tbl_extend("force", opts, { desc = "List all comments" }))
+  vim.keymap.set("n", km.comments_to_clipboard, function() export.to_clipboard() end, vim.tbl_extend("force", opts, { desc = "Export to clipboard" }))
+  vim.keymap.set("n", km.comments_to_sidekick, function() export.to_sidekick() end, vim.tbl_extend("force", opts, { desc = "Send to sidekick" }))
+  vim.keymap.set("n", km.clear_comments, function() require("review").clear() end, vim.tbl_extend("force", opts, { desc = "Clear all comments" }))
   vim.keymap.set("n", km.next_comment, function() comments.goto_next() end, vim.tbl_extend("force", opts, { desc = "Next comment" }))
   vim.keymap.set("n", km.prev_comment, function() comments.goto_prev() end, vim.tbl_extend("force", opts, { desc = "Previous comment" }))
 
   -- Close and export
-  vim.keymap.set("n", "q", function() require("review").close() end, vim.tbl_extend("force", opts, { desc = "Close" }))
+  vim.keymap.set("n", km.close, function() require("review").close() end, vim.tbl_extend("force", opts, { desc = "Close" }))
 
   -- Toggle readonly mode
-  vim.keymap.set("n", "R", function() require("review").toggle_readonly() end, vim.tbl_extend("force", opts, { desc = "Toggle readonly mode" }))
+  vim.keymap.set("n", km.toggle_readonly, function() require("review").toggle_readonly() end, vim.tbl_extend("force", opts, { desc = "Toggle readonly mode" }))
 
   keymapped_buffers[bufnr] = true
 end

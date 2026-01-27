@@ -22,6 +22,12 @@ local M = {}
 ---@field edit_comment string
 ---@field next_comment string
 ---@field prev_comment string
+---@field list_comments string
+---@field comments_to_clipboard string
+---@field comments_to_sidekick string
+---@field clear_comments string
+---@field close string
+---@field toggle_readonly string
 
 ---@class ReviewExportConfig
 ---@field context_lines number
@@ -47,6 +53,12 @@ M.defaults = {
     edit_comment = "<leader>ce",
     next_comment = "]n",
     prev_comment = "[n",
+    list_comments = "c",
+    comments_to_clipboard = "C",
+    comments_to_sidekick = "S",
+    clear_comments = "<C-r>",
+    close = "q",
+    toggle_readonly = "R",
   },
   export = {
     context_lines = 3,
