@@ -5,8 +5,6 @@ local store = require("review.store")
 local export = require("review.export")
 local review = require("review")
 
-local id_marker_prefix = "<!--r:id="
-local id_marker_suffix = "-->"
 
 ---@return string|nil
 local function get_git_root()
@@ -75,30 +73,6 @@ local function normalize_path(path)
   return path
 end
 
----@param line string
----@return string|nil
----@return string
-local function extract_id(line)
-  local id = nil
-  local start_pos = line:find(id_marker_prefix, 1, true)
-  if not start_pos then
-    return nil, line
-  end
-
-  local end_pos = line:find(id_marker_suffix, start_pos + #id_marker_prefix, true)
-  if not end_pos then
-    return nil, line
-  end
-
-  local id_start = start_pos + #id_marker_prefix
-  local id_end = end_pos - 1
-  if id_start <= id_end then
-    id = line:sub(id_start, id_end)
-  end
-
-  local cleaned = line:sub(1, start_pos - 1):gsub("%s+$", "")
-  return id, cleaned
-end
 
 ---@param type_str string
 ---@return string|nil
@@ -128,9 +102,7 @@ end
 ---@param line string
 ---@return table|nil
 local function parse_comment_line(line)
-  local id, cleaned = extract_id(line)
-
-  local type_str = cleaned:match("%*%*%[([^%]]+)%]%*%*")
+  local type_str = line:match("%*%*%[([^%]]+)%]%*%*")
   if not type_str then
     return nil
   end
@@ -140,7 +112,7 @@ local function parse_comment_line(line)
     return nil
   end
 
-  local loc = cleaned:match("`([^`]+)`")
+  local loc = line:match("`([^`]+)`")
   if not loc then
     return nil
   end
@@ -150,15 +122,13 @@ local function parse_comment_line(line)
     return nil
   end
 
-  local text = cleaned:match(" %- (.+)$")
+  local text = line:match(" %- (.+)$")
   if not text or text == "" then
     return nil
   end
 
-  local comment_id = id or store.generate_id()
-
   return {
-    id = comment_id,
+    id = store.generate_id(),
     file = normalize_path(file),
     line = line_num,
     type = normalized_type,
@@ -213,32 +183,6 @@ function M.load_into_store()
   return true
 end
 
----@param include_ids boolean
----@return string
-local function generate_markdown(include_ids)
-  local all_comments = store.get_all()
-
-  if #all_comments == 0 then
-    return "No comments yet."
-  end
-
-  local lines = {}
-  table.insert(lines, "I reviewed your code and have the following comments. Please address them.")
-  table.insert(lines, "")
-  table.insert(lines, "Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)")
-  table.insert(lines, "")
-
-  for i, comment in ipairs(all_comments) do
-    local type_name = string.upper(comment.type)
-    local line = string.format("%d. **[%s]** `%s:%d` - %s", i, type_name, comment.file, comment.line, comment.text)
-    if include_ids then
-      line = line .. " " .. id_marker_prefix .. comment.id .. id_marker_suffix
-    end
-    table.insert(lines, line)
-  end
-
-  return table.concat(lines, "\n")
-end
 
 ---@param opts? { copy: boolean, close: boolean }
 ---@return boolean
@@ -252,7 +196,7 @@ function M.write_from_store(opts)
     return false
   end
 
-  local markdown = generate_markdown(true)
+  local markdown = export.generate_markdown()
   local file = io.open(path, "w")
   if not file then
     return false
