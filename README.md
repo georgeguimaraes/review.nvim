@@ -94,6 +94,32 @@ Using lazy.nvim:
 
 ## Configuration
 
+All keymaps can be set to `false` to disable them.
+
+**Keymap options**
+| Option | Default | Action |
+|--------|---------|--------|
+| `add_note` | `<leader>cn` | Add note (edit mode) |
+| `add_suggestion` | `<leader>cs` | Add suggestion (edit mode) |
+| `add_issue` | `<leader>ci` | Add issue (edit mode) |
+| `add_praise` | `<leader>cp` | Add praise (edit mode) |
+| `delete_comment` | `<leader>cd` | Delete comment (edit mode) |
+| `edit_comment` | `<leader>ce` | Edit comment (edit mode) |
+| `next_comment` | `]n` | Next comment |
+| `prev_comment` | `[n` | Previous comment |
+| `next_file` | `<Tab>` | Next file |
+| `prev_file` | `<S-Tab>` | Previous file |
+| `toggle_file_panel` | `f` | Toggle file panel |
+| `list_comments` | `c` | List all comments |
+| `export_clipboard` | `C` | Export to clipboard |
+| `send_sidekick` | `S` | Send comments to sidekick |
+| `clear_comments` | `<C-r>` | Clear all comments |
+| `close` | `q` | Close and export |
+| `toggle_readonly` | `R` | Toggle readonly/edit mode |
+| `readonly_add` | `i` | Add comment (readonly mode) |
+| `readonly_delete` | `d` | Delete comment (readonly mode) |
+| `readonly_edit` | `e` | Edit comment (readonly mode) |
+
 ```lua
 require("review").setup({
   comment_types = {
