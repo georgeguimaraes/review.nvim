@@ -104,10 +104,14 @@ function M.open()
   open_codediff_with_revisions(nil, nil)
 end
 
-function M.open_commits()
+function M.open_commits(rev1, rev2)
+  if rev1 then
+    open_codediff_with_revisions(rev1, rev2 or rev1)
+    return
+  end
   local picker = require("review.picker")
-  picker.open(function(rev1, rev2)
-    open_codediff_with_revisions(rev1, rev2)
+  picker.open(function(r1, r2)
+    open_codediff_with_revisions(r1, r2)
   end)
 end
 

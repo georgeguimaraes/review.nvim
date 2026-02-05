@@ -48,6 +48,7 @@ Using lazy.nvim:
 :Review              " Open codediff with comment keymaps (default)
 :Review open         " Same as above
 :Review commits      " Select commits to review (picker modal)
+:Review commits REV1 REV2  " Review specific revision range (skips picker)
 :Review close        " Close and export comments to clipboard
 :Review export       " Export comments to clipboard
 :Review preview      " Preview exported markdown in split
