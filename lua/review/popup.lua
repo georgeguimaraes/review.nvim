@@ -23,6 +23,7 @@ function M.open(initial_type, initial_text, callback)
       if prev_win and vim.api.nvim_win_is_valid(prev_win) then
         vim.api.nvim_set_current_win(prev_win)
       end
+      vim.cmd("stopinsert")
     end, 10)
   end
 
@@ -147,16 +148,24 @@ function M.open(initial_type, initial_text, callback)
   vim.api.nvim_set_current_win(text_popup.winid)
   vim.cmd("startinsert")
 
-  -- TAB to cycle types
-  vim.keymap.set({ "i", "n" }, "<Tab>", cycle_type, { buffer = text_popup.bufnr, noremap = true })
+  local km = cfg.keymaps
 
-  -- C-s to submit from insert mode (Enter inserts newlines normally)
-  vim.keymap.set("i", "<C-s>", submit, { buffer = text_popup.bufnr, noremap = true })
+  -- Cycle types
+  if km.popup_cycle_type then
+    vim.keymap.set({ "i", "n" }, km.popup_cycle_type, cycle_type, { buffer = text_popup.bufnr, noremap = true })
+  end
 
-  -- Normal mode mappings
+  -- Submit (both modes)
+  if km.popup_submit then
+    vim.keymap.set({ "i", "n" }, km.popup_submit, submit, { buffer = text_popup.bufnr, noremap = true })
+  end
   vim.keymap.set("n", "<CR>", submit, { buffer = text_popup.bufnr, noremap = true })
+
+  -- Cancel
   vim.keymap.set("n", "<Esc>", close, { buffer = text_popup.bufnr, noremap = true })
-  vim.keymap.set("n", "q", close, { buffer = text_popup.bufnr, noremap = true })
+  if km.popup_cancel then
+    vim.keymap.set("n", km.popup_cancel, close, { buffer = text_popup.bufnr, noremap = true })
+  end
 end
 
 return M

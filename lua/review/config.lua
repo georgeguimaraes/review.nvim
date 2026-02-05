@@ -34,6 +34,9 @@ local M = {}
 ---@field readonly_add string|false
 ---@field readonly_delete string|false
 ---@field readonly_edit string|false
+---@field popup_submit string|false
+---@field popup_cancel string|false
+---@field popup_cycle_type string|false
 
 ---@class ReviewExportConfig
 ---@field context_lines number
@@ -75,6 +78,10 @@ M.defaults = {
     readonly_add = "i",
     readonly_delete = "d",
     readonly_edit = "e",
+    -- Popup keymaps
+    popup_submit = "<C-s>",
+    popup_cancel = "q",
+    popup_cycle_type = "<Tab>",
   },
   export = {
     context_lines = 3,

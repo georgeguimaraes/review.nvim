@@ -119,6 +119,9 @@ All keymaps can be set to `false` to disable them.
 | `readonly_add` | `i` | Add comment (readonly mode) |
 | `readonly_delete` | `d` | Delete comment (readonly mode) |
 | `readonly_edit` | `e` | Edit comment (readonly mode) |
+| `popup_submit` | `<C-s>` | Submit comment (popup, insert & normal) |
+| `popup_cancel` | `q` | Cancel comment (popup, normal mode) |
+| `popup_cycle_type` | `<Tab>` | Cycle comment type (popup) |
 
 ```lua
 require("review").setup({
