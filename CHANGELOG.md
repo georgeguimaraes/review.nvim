@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.6.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.5.0...v1.6.0) (2026-02-18)
+
+
+### Features
+
+* add configurable file panel toggle keymap ([6cd2567](https://github.com/georgeguimaraes/review.nvim/commit/6cd2567ca5ac07b67366075b33dc83699690b772))
+* allow open_commits to accept rev arguments directly ([#16](https://github.com/georgeguimaraes/review.nvim/issues/16)) ([97180f8](https://github.com/georgeguimaraes/review.nvim/commit/97180f86548253a6990bbeda3056e02df1d7e85d))
+
+
+### Bug Fixes
+
+* **popup:** exit insert mode after submit, add configurable keymaps ([#17](https://github.com/georgeguimaraes/review.nvim/issues/17)) ([004ae79](https://github.com/georgeguimaraes/review.nvim/commit/004ae79ede88ce8655a777c87fb8d200c86b7bf6))
+
+
+### Documentation
+
+* document keymap options ([3602c4e](https://github.com/georgeguimaraes/review.nvim/commit/3602c4ecb9abcd661c7e94815cd335f18beb527c))
+
 ## [1.5.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.4.0...v1.5.0) (2026-01-29)
 
 
