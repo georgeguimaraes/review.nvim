@@ -190,10 +190,19 @@ end
 
 local function confirm_selection(callback)
   local selected_commits = get_selected_commits()
+
+  -- If nothing explicitly selected, use the commit under the cursor
+  if #selected_commits == 0 then
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local commit = commits[cursor[1]]
+    if commit then
+      selected_commits = { commit }
+    end
+  end
+
   close_picker()
 
   if #selected_commits == 0 then
-    -- No commits selected, open regular codediff (staged + unstaged)
     callback(nil, nil)
     return
   end
@@ -237,7 +246,7 @@ function M.open(callback)
       text = {
         top = " Select commits to review ",
         top_align = "center",
-        bottom = " <Space> select | <CR> confirm | q quit | n clear ",
+        bottom = " <Space> select range | <CR> confirm | q quit | n clear ",
         bottom_align = "center",
       },
     },
