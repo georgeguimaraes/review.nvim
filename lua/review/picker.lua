@@ -60,12 +60,53 @@ end
 local ns_id = nil
 
 local function format_line(commit)
-  local marker = selected[commit.hash] and "[x]" or "[ ]"
-  local line = string.format("%s %s %s (%s, %s)", marker, commit.short_hash, commit.message, commit.author, commit.date)
+  local is_selected = selected[commit.hash] and true or false
+  local marker = is_selected and "[x]" or "[ ]"
+  local hash = commit.short_hash
+  local meta = string.format("(%s, %s)", commit.author, commit.date)
+  local line = string.format("%s %s %s %s", marker, hash, commit.message, meta)
+
+  local marker_len = #marker
+  local hash_start = marker_len + 1
+  local hash_end = hash_start + #hash
+  local meta_start = #line - #meta
+
   if #line > 120 then
     line = line:sub(1, 117) .. "..."
   end
-  return line
+
+  local line_len = #line
+  local hl = {}
+
+  if is_selected then
+    table.insert(hl, { "ReviewPickerSelected", 0, math.min(marker_len, line_len) })
+  end
+  if hash_start < line_len then
+    table.insert(hl, { "ReviewPickerHash", hash_start, math.min(hash_end, line_len) })
+  end
+  if meta_start < line_len then
+    table.insert(hl, { "ReviewPickerMeta", meta_start, line_len })
+  end
+
+  return line, hl, is_selected
+end
+
+local function apply_line_hl(buf, row, line_len, highlights, is_selected)
+  if is_selected then
+    vim.api.nvim_buf_set_extmark(buf, ns_id, row, 0, {
+      end_col = line_len,
+      hl_group = "Visual",
+      hl_eol = true,
+      priority = 100,
+    })
+  end
+  for _, hl in ipairs(highlights) do
+    vim.api.nvim_buf_set_extmark(buf, ns_id, row, hl[2], {
+      end_col = hl[3],
+      hl_group = hl[1],
+      priority = 200,
+    })
+  end
 end
 
 local function render_lines()
@@ -75,22 +116,22 @@ local function render_lines()
 
   local buf = popup.bufnr
   local lines = {}
+  local line_data = {}
 
   for _, commit in ipairs(commits) do
-    table.insert(lines, format_line(commit))
+    local line, hl, is_sel = format_line(commit)
+    table.insert(lines, line)
+    table.insert(line_data, { hl = hl, is_selected = is_sel, len = #line })
   end
 
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 
-  -- Apply highlights
   ns_id = vim.api.nvim_create_namespace("review_picker")
   vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
-  for i, commit in ipairs(commits) do
-    if selected[commit.hash] then
-      vim.api.nvim_buf_add_highlight(buf, ns_id, "Visual", i - 1, 0, -1)
-    end
+  for i, data in ipairs(line_data) do
+    apply_line_hl(buf, i - 1, data.len, data.hl, data.is_selected)
   end
 end
 
@@ -100,17 +141,15 @@ local function update_line(line_num)
   local commit = commits[line_num]
   if not commit then return end
 
-  -- Update just this line's text
+  local line, hl, is_sel = format_line(commit)
+
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-  vim.api.nvim_buf_set_lines(buf, line_num - 1, line_num, false, { format_line(commit) })
+  vim.api.nvim_buf_set_lines(buf, line_num - 1, line_num, false, { line })
   vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 
-  -- Update highlight
   if ns_id then
     vim.api.nvim_buf_clear_namespace(buf, ns_id, line_num - 1, line_num)
-    if selected[commit.hash] then
-      vim.api.nvim_buf_add_highlight(buf, ns_id, "Visual", line_num - 1, 0, -1)
-    end
+    apply_line_hl(buf, line_num - 1, #line, hl, is_sel)
   end
 end
 
@@ -208,6 +247,7 @@ function M.open(callback)
     },
     win_options = {
       cursorline = true,
+      cursorlineopt = "both",
     },
   })
 

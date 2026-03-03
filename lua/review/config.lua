@@ -38,6 +38,7 @@ local M = {}
 ---@field add_file_comment string|false
 ---@field popup_submit string|false
 ---@field popup_cancel string|false
+---@field show_help string|false
 ---@field popup_cycle_type string|false
 
 ---@class ReviewExportConfig
@@ -82,6 +83,8 @@ M.defaults = {
     readonly_delete = "d",
     readonly_edit = "e",
     readonly_add_file = "F",
+    -- Help
+    show_help = "?",
     -- Popup keymaps
     popup_submit = "<C-s>",
     popup_cancel = "q",

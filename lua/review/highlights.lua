@@ -8,6 +8,9 @@ function M.setup()
     ReviewPraise = "DiagnosticOk",
     ReviewSign = "Comment",
     ReviewVirtText = "Comment",
+    ReviewPickerHash = "Identifier",
+    ReviewPickerMeta = "Comment",
+    ReviewPickerSelected = "String",
   }
 
   for group, link in pairs(links) do
