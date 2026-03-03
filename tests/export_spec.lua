@@ -31,5 +31,27 @@ describe("review.export", function()
       assert.matches("2%. %*%*%[SUGGESTION%]%*%*", md)
       assert.matches("3%. %*%*%[ISSUE%]%*%*", md)
     end)
+
+    it("uses tilde notation for old-side comments", function()
+      store.add("src/main.lua", 10, "issue", "Removed bug", nil, "old")
+
+      local md = export.generate_markdown()
+      assert.matches("src/main.lua:~10", md)
+    end)
+
+    it("uses tilde on both ends for old-side range", function()
+      store.add("src/main.lua", 10, "issue", "Old range", 15, "old")
+
+      local md = export.generate_markdown()
+      assert.matches("src/main.lua:~10%-~15", md)
+    end)
+
+    it("uses normal notation for new-side comments", function()
+      store.add("src/main.lua", 10, "issue", "New side", nil, "new")
+
+      local md = export.generate_markdown()
+      assert.matches("src/main.lua:10", md)
+      assert.not_matches("~10", md)
+    end)
   end)
 end)

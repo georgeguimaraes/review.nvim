@@ -26,8 +26,15 @@ function M.generate_markdown()
   for i, comment in ipairs(all_comments) do
     local type_name = string.upper(comment.type)
     local location
+    local is_old = (comment.side or "new") == "old"
     if comment.line == 0 then
       location = comment.file
+    elseif is_old then
+      if comment.line_end and comment.line_end ~= comment.line then
+        location = string.format("%s:~%d-~%d", comment.file, comment.line, comment.line_end)
+      else
+        location = string.format("%s:~%d", comment.file, comment.line)
+      end
     elseif comment.line_end and comment.line_end ~= comment.line then
       location = string.format("%s:%d-%d", comment.file, comment.line, comment.line_end)
     else

@@ -47,7 +47,8 @@ local function build_comment_box(text, type_name, hl)
 end
 
 ---@param bufnr number
-function M.render_for_buffer(bufnr)
+---@param side? "old"|"new"
+function M.render_for_buffer(bufnr, side)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
@@ -74,7 +75,7 @@ function M.render_for_buffer(bufnr)
     return
   end
 
-  local comments = store.get_for_file(file)
+  local comments = store.get_for_file(file, side)
 
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 
@@ -146,10 +147,10 @@ function M.refresh()
 
   local orig_buf, mod_buf = hooks.get_buffers()
   if orig_buf then
-    M.render_for_buffer(orig_buf)
+    M.render_for_buffer(orig_buf, "old")
   end
   if mod_buf then
-    M.render_for_buffer(mod_buf)
+    M.render_for_buffer(mod_buf, "new")
   end
 end
 

@@ -11,13 +11,13 @@ end
 
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
 function M.add_at_cursor(initial_type)
-  local file, line = hooks.get_cursor_position()
+  local file, line, side = hooks.get_cursor_position()
   if not file or not line then
     notify("Could not determine cursor position", vim.log.levels.WARN)
     return
   end
 
-  local existing = store.get_at_line(file, line)
+  local existing = store.get_at_line(file, line, side)
   if existing then
     notify("Comment already exists at this line. Use edit instead.", vim.log.levels.WARN)
     return
@@ -25,8 +25,7 @@ function M.add_at_cursor(initial_type)
 
   popup.open(initial_type or "note", nil, function(comment_type, text)
     if comment_type and text then
-      store.add(file, line, comment_type, text)
-      -- Schedule refresh to run after popup is fully closed
+      store.add(file, line, comment_type, text, nil, side)
       vim.schedule(function()
         marks.refresh()
       end)
@@ -74,13 +73,13 @@ end
 
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
 function M.add_for_range(initial_type)
-  local file, start_line, end_line = hooks.get_visual_range()
+  local file, start_line, end_line, side = hooks.get_visual_range()
   if not file or not start_line or not end_line then
     notify("Could not determine visual selection", vim.log.levels.WARN)
     return
   end
 
-  local existing = store.get_overlapping(file, start_line, end_line)
+  local existing = store.get_overlapping(file, start_line, end_line, side)
   if existing then
     notify("Comment already exists in this range. Use edit instead.", vim.log.levels.WARN)
     return
@@ -88,7 +87,7 @@ function M.add_for_range(initial_type)
 
   popup.open(initial_type or "note", nil, function(comment_type, text)
     if comment_type and text then
-      store.add(file, start_line, comment_type, text, end_line)
+      store.add(file, start_line, comment_type, text, end_line, side)
       vim.schedule(function()
         marks.refresh()
       end)
@@ -98,13 +97,13 @@ function M.add_for_range(initial_type)
 end
 
 function M.edit_at_cursor()
-  local file, line = hooks.get_cursor_position()
+  local file, line, side = hooks.get_cursor_position()
   if not file or not line then
     notify("Could not determine cursor position", vim.log.levels.WARN)
     return
   end
 
-  local comment = store.get_at_line(file, line)
+  local comment = store.get_at_line(file, line, side)
   if not comment and line == 1 then
     comment = store.get_file_comment(file)
   end
@@ -126,13 +125,13 @@ function M.edit_at_cursor()
 end
 
 function M.delete_at_cursor()
-  local file, line = hooks.get_cursor_position()
+  local file, line, side = hooks.get_cursor_position()
   if not file or not line then
     notify("Could not determine cursor position", vim.log.levels.WARN)
     return
   end
 
-  local comment = store.get_at_line(file, line)
+  local comment = store.get_at_line(file, line, side)
   if not comment and line == 1 then
     comment = store.get_file_comment(file)
   end
@@ -156,12 +155,12 @@ function M.delete_at_cursor()
 end
 
 function M.goto_next()
-  local file, line = hooks.get_cursor_position()
+  local file, line, side = hooks.get_cursor_position()
   if not file then
     return
   end
 
-  local comments = store.get_for_file(file)
+  local comments = store.get_for_file(file, side)
   for _, comment in ipairs(comments) do
     if comment.line > line then
       vim.api.nvim_win_set_cursor(0, { comment.line, 0 })
@@ -173,12 +172,12 @@ function M.goto_next()
 end
 
 function M.goto_prev()
-  local file, line = hooks.get_cursor_position()
+  local file, line, side = hooks.get_cursor_position()
   if not file then
     return
   end
 
-  local comments = store.get_for_file(file)
+  local comments = store.get_for_file(file, side)
   for i = #comments, 1, -1 do
     local comment = comments[i]
     if comment.line < line then
@@ -206,8 +205,15 @@ function M.list()
     local icon = type_info and type_info.icon or "●"
     local name = type_info and type_info.name or comment.type
     local location
+    local is_old = (comment.side or "new") == "old"
     if comment.line == 0 then
       location = comment.file
+    elseif is_old then
+      if comment.line_end and comment.line_end ~= comment.line then
+        location = string.format("%s:~%d-~%d", comment.file, comment.line, comment.line_end)
+      else
+        location = string.format("%s:~%d", comment.file, comment.line)
+      end
     elseif comment.line_end and comment.line_end ~= comment.line then
       location = string.format("%s:%d-%d", comment.file, comment.line, comment.line_end)
     else

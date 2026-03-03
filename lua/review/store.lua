@@ -7,6 +7,7 @@ local storage = require("review.storage")
 ---@field file string
 ---@field line number
 ---@field line_end? number
+---@field side? "old"|"new"
 ---@field type "note"|"suggestion"|"issue"|"praise"
 ---@field text string
 ---@field created_at number
@@ -49,8 +50,9 @@ end
 ---@param type "note"|"suggestion"|"issue"|"praise"
 ---@param text string
 ---@param line_end? number
+---@param side? "old"|"new"
 ---@return Comment
-function M.add(file, line, type, text, line_end)
+function M.add(file, line, type, text, line_end, side)
   if not M.comments[file] then
     M.comments[file] = {}
   end
@@ -60,6 +62,7 @@ function M.add(file, line, type, text, line_end)
     file = file,
     line = line,
     line_end = (line_end and line_end ~= line) and line_end or nil,
+    side = side or "new",
     type = type,
     text = text,
     created_at = os.time(),
@@ -84,9 +87,20 @@ function M.get(id)
 end
 
 ---@param file string
+---@param side? "old"|"new"
 ---@return Comment[]
-function M.get_for_file(file)
-  return M.comments[file] or {}
+function M.get_for_file(file, side)
+  local comments = M.comments[file] or {}
+  if not side then
+    return comments
+  end
+  local filtered = {}
+  for _, comment in ipairs(comments) do
+    if comment.line == 0 or (comment.side or "new") == side then
+      table.insert(filtered, comment)
+    end
+  end
+  return filtered
 end
 
 ---@param file string
@@ -103,13 +117,16 @@ end
 
 ---@param file string
 ---@param line number
+---@param side? "old"|"new"
 ---@return Comment|nil
-function M.get_at_line(file, line)
+function M.get_at_line(file, line, side)
   local comments = M.comments[file] or {}
   for _, comment in ipairs(comments) do
     local line_end = comment.line_end or comment.line
     if line >= comment.line and line <= line_end then
-      return comment
+      if not side or (comment.side or "new") == side then
+        return comment
+      end
     end
   end
   return nil
@@ -118,13 +135,16 @@ end
 ---@param file string
 ---@param start_line number
 ---@param end_line number
+---@param side? "old"|"new"
 ---@return Comment|nil
-function M.get_overlapping(file, start_line, end_line)
+function M.get_overlapping(file, start_line, end_line, side)
   local comments = M.comments[file] or {}
   for _, comment in ipairs(comments) do
     local c_end = comment.line_end or comment.line
     if comment.line <= end_line and c_end >= start_line then
-      return comment
+      if not side or (comment.side or "new") == side then
+        return comment
+      end
     end
   end
   return nil

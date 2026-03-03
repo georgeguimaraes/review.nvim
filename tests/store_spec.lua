@@ -92,4 +92,93 @@ describe("review.store", function()
       assert.equals(2, store.count())
     end)
   end)
+
+  describe("side awareness", function()
+    it("stores side field on add", function()
+      local c = store.add("file.lua", 10, "note", "old side", nil, "old")
+      assert.equals("old", c.side)
+    end)
+
+    it("defaults side to new", function()
+      local c = store.add("file.lua", 10, "note", "no side")
+      assert.equals("new", c.side)
+    end)
+
+    it("get_at_line filters by side", function()
+      store.add("file.lua", 10, "note", "old comment", nil, "old")
+      store.add("file.lua", 10, "issue", "new comment", nil, "new")
+
+      local old = store.get_at_line("file.lua", 10, "old")
+      assert.is_not_nil(old)
+      assert.equals("old comment", old.text)
+
+      local new = store.get_at_line("file.lua", 10, "new")
+      assert.is_not_nil(new)
+      assert.equals("new comment", new.text)
+    end)
+
+    it("get_at_line without side returns first match", function()
+      store.add("file.lua", 10, "note", "old comment", nil, "old")
+      local c = store.get_at_line("file.lua", 10)
+      assert.is_not_nil(c)
+      assert.equals("old comment", c.text)
+    end)
+
+    it("get_overlapping filters by side", function()
+      store.add("file.lua", 5, "note", "old range", 15, "old")
+      store.add("file.lua", 5, "issue", "new range", 15, "new")
+
+      local old = store.get_overlapping("file.lua", 8, 12, "old")
+      assert.is_not_nil(old)
+      assert.equals("old range", old.text)
+
+      local new = store.get_overlapping("file.lua", 8, 12, "new")
+      assert.is_not_nil(new)
+      assert.equals("new range", new.text)
+    end)
+
+    it("get_for_file filters by side", function()
+      store.add("file.lua", 5, "note", "old", nil, "old")
+      store.add("file.lua", 10, "issue", "new", nil, "new")
+
+      local old_comments = store.get_for_file("file.lua", "old")
+      assert.equals(1, #old_comments)
+      assert.equals("old", old_comments[1].text)
+
+      local new_comments = store.get_for_file("file.lua", "new")
+      assert.equals(1, #new_comments)
+      assert.equals("new", new_comments[1].text)
+    end)
+
+    it("get_for_file without side returns all", function()
+      store.add("file.lua", 5, "note", "old", nil, "old")
+      store.add("file.lua", 10, "issue", "new", nil, "new")
+
+      local all = store.get_for_file("file.lua")
+      assert.equals(2, #all)
+    end)
+
+    it("get_for_file with side includes file-level comments", function()
+      store.add("file.lua", 0, "note", "file comment")
+      store.add("file.lua", 10, "issue", "new side", nil, "new")
+      store.add("file.lua", 10, "note", "old side", nil, "old")
+
+      local old_comments = store.get_for_file("file.lua", "old")
+      assert.equals(2, #old_comments)
+
+      local new_comments = store.get_for_file("file.lua", "new")
+      assert.equals(2, #new_comments)
+    end)
+
+    it("comments on different sides at same line don't conflict", function()
+      store.add("file.lua", 10, "note", "old note", nil, "old")
+      store.add("file.lua", 10, "issue", "new issue", nil, "new")
+
+      local old = store.get_at_line("file.lua", 10, "old")
+      local new = store.get_at_line("file.lua", 10, "new")
+      assert.is_not_nil(old)
+      assert.is_not_nil(new)
+      assert.are_not.equal(old.text, new.text)
+    end)
+  end)
 end)

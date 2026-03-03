@@ -57,6 +57,25 @@ Using lazy.nvim:
 :Review toggle       " Toggle readonly/edit mode
 ```
 
+## Workflow
+
+Open a review with `:Review` to see your staged and unstaged changes in a side-by-side diff, or `:Review commits` if you want to pick specific commits to review. The diff opens in a new tab with a file panel on the left.
+
+Navigate between files with `<Tab>` and `<S-Tab>`. Toggle the file panel with `f`. Switch between the old (left) and new (right) panes with `<C-w>h` and `<C-w>l`. When you spot something worth commenting on, press `i` on the line and pick a comment type from the menu (note, suggestion, issue, praise). The comment renders inline as a box below the line with a sign icon in the gutter.
+
+For multi-line comments, visually select the range first then press `i`. For file-level comments that apply to the whole file, press `F`. Comments on the left (old) side of the diff only show on that side, and same for the right (new) side.
+
+Use `]n` and `[n` to jump between comments, `e` to edit one, `d` to delete. Press `c` to see a list of all comments across files and jump to any of them.
+
+When you're done, press `q` to close the review. This automatically copies all your comments to the clipboard as structured markdown and shows a preview. Paste it into Claude Code, sidekick.nvim (`S`), or wherever you're chatting with an AI. The format looks like this:
+
+```
+1. **[ISSUE]** `src/api.ts:23` - This endpoint doesn't handle errors
+2. **[SUGGESTION]** `src/utils.ts:~10` - The old implementation was cleaner
+```
+
+Lines prefixed with `~` refer to the old (left) side of the diff. Comments persist per branch, so you can close Neovim and come back to the same review later. Sessions auto-expire after 7 days.
+
 ## Keybindings (in diff view)
 
 **Readonly mode** (default):
@@ -162,9 +181,11 @@ I reviewed your code and have the following comments. Please address them.
 Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
 
 1. **[ISSUE]** `src/components/Button.tsx:23` - Wrapping onClick creates a new function every render
-2. **[SUGGESTION]** `src/utils/api.ts:45` - Consider using useMemo here
-3. **[PRAISE]** `src/hooks/useAuth.ts:12` - Clean implementation of the auth flow
+2. **[SUGGESTION]** `src/utils/api.ts:~45` - The old implementation was cleaner
+3. **[PRAISE]** `src/hooks/useAuth.ts:12-18` - Clean implementation of the auth flow
 ```
+
+Lines prefixed with `~` (e.g. `:~45`) refer to the old (left) side of the diff. Range comments use `start-end` notation.
 
 ## Running Tests
 

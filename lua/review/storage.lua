@@ -72,8 +72,31 @@ function M.save(comments)
   end
 end
 
+local EXPIRY_SECONDS = 7 * 24 * 60 * 60
+local cleanup_done = false
+
+function M.cleanup_expired()
+  if cleanup_done then
+    return
+  end
+  cleanup_done = true
+
+  vim.defer_fn(function()
+    local files = vim.fn.glob(data_dir .. "/*.json", false, true)
+    local now = os.time()
+    for _, filepath in ipairs(files) do
+      local mtime = vim.fn.getftime(filepath)
+      if mtime > 0 and (now - mtime) > EXPIRY_SECONDS then
+        os.remove(filepath)
+      end
+    end
+  end, 0)
+end
+
 ---@return table
 function M.load()
+  M.cleanup_expired()
+
   local path = M.get_storage_path()
   if not path then
     return {}

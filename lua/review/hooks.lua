@@ -69,15 +69,16 @@ end
 
 ---@return string|nil file path
 ---@return number|nil line number
+---@return "old"|"new"|nil side
 function M.get_cursor_position()
   local lifecycle = get_lifecycle()
   if not lifecycle or not current_tabpage then
-    return nil, nil
+    return nil, nil, nil
   end
 
   local sess = lifecycle.get_session(current_tabpage)
   if not sess then
-    return nil, nil
+    return nil, nil, nil
   end
 
   local cursor = vim.api.nvim_win_get_cursor(0)
@@ -89,10 +90,13 @@ function M.get_cursor_position()
 
   -- Determine which file we're on based on buffer
   local file_path
+  local side
   if current_buf == orig_buf then
     file_path = orig_path
+    side = "old"
   elseif current_buf == mod_buf then
     file_path = mod_path
+    side = "new"
   else
     -- Try to get path from buffer name
     local bufname = vim.api.nvim_buf_get_name(current_buf)
@@ -107,7 +111,7 @@ function M.get_cursor_position()
   end
 
   if not file_path then
-    return nil, nil
+    return nil, nil, nil
   end
 
   -- Return relative path
@@ -115,15 +119,16 @@ function M.get_cursor_position()
   if git_ctx and git_ctx.git_root then
     local abs_path = vim.fn.fnamemodify(file_path, ":p")
     local rel_path = abs_path:gsub("^" .. vim.pesc(git_ctx.git_root) .. "/", "")
-    return normalize_path(rel_path), cursor[1]
+    return normalize_path(rel_path), cursor[1], side
   end
 
-  return normalize_path(vim.fn.fnamemodify(file_path, ":.")), cursor[1]
+  return normalize_path(vim.fn.fnamemodify(file_path, ":.")), cursor[1], side
 end
 
 ---@return string|nil file path
 ---@return number|nil start line
 ---@return number|nil end line
+---@return "old"|"new"|nil side
 function M.get_visual_range()
   local start_line = vim.fn.line("'<")
   local end_line = vim.fn.line("'>")
@@ -131,12 +136,12 @@ function M.get_visual_range()
     start_line, end_line = end_line, start_line
   end
 
-  local file, _ = M.get_cursor_position()
+  local file, _, side = M.get_cursor_position()
   if not file then
-    return nil, nil, nil
+    return nil, nil, nil, nil
   end
 
-  return file, start_line, end_line
+  return file, start_line, end_line, side
 end
 
 ---@return number|nil original buffer
@@ -193,14 +198,16 @@ function M.on_session_created(tabpage)
         return
       end
       local bufnr = vim.api.nvim_get_current_buf()
-      marks.render_for_buffer(bufnr)
+      local ob, mb = lifecycle.get_buffers(current_tabpage)
+      local side = bufnr == ob and "old" or "new"
+      marks.render_for_buffer(bufnr, side)
     end,
   })
 
   -- Initial render with delay for buffers to be ready
   vim.defer_fn(function()
-    marks.render_for_buffer(orig_buf)
-    marks.render_for_buffer(mod_buf)
+    marks.render_for_buffer(orig_buf, "old")
+    marks.render_for_buffer(mod_buf, "new")
   end, 100)
 end
 
@@ -228,8 +235,8 @@ function M.on_file_changed(tabpage)
 
   -- Re-render comments
   vim.defer_fn(function()
-    marks.render_for_buffer(orig_buf)
-    marks.render_for_buffer(mod_buf)
+    marks.render_for_buffer(orig_buf, "old")
+    marks.render_for_buffer(mod_buf, "new")
   end, 50)
 end
 
