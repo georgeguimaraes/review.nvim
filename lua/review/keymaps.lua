@@ -1,6 +1,5 @@
 local M = {}
 
-local Popup = require("nui.popup")
 local config = require("review.config")
 local comments = require("review.comments")
 local export = require("review.export")
@@ -147,6 +146,7 @@ local function show_help()
   local width = math.max(max_line_width + 2, 30)
   local height = #lines
 
+  local Popup = require("nui.popup")
   help_popup = Popup({
     position = "50%",
     size = { width = width, height = height },
@@ -336,5 +336,11 @@ function M.cleanup()
   close_help()
   M.clear_keymaps()
 end
+
+M._test = {
+  format_key = format_key,
+  add_section = add_section,
+  is_enabled = is_enabled,
+}
 
 return M
