@@ -199,6 +199,9 @@ function M.on_session_created(tabpage)
       end
       local bufnr = vim.api.nvim_get_current_buf()
       local ob, mb = lifecycle.get_buffers(current_tabpage)
+      if bufnr ~= ob and bufnr ~= mb then
+        return
+      end
       local side = bufnr == ob and "old" or "new"
       marks.render_for_buffer(bufnr, side)
     end,
