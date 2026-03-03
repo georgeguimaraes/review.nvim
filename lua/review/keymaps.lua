@@ -16,10 +16,11 @@ end
 
 --- Delete a keymap from a buffer if it exists
 ---@param bufnr number
+---@param mode string
 ---@param lhs string|nil
-local function del_keymap(bufnr, lhs)
+local function del_keymap(bufnr, mode, lhs)
   if lhs and vim.api.nvim_buf_is_valid(bufnr) then
-    pcall(vim.keymap.del, "n", lhs, { buffer = bufnr })
+    pcall(vim.keymap.del, mode, lhs, { buffer = bufnr })
   end
 end
 
@@ -28,8 +29,8 @@ end
 local function clear_buffer_keymaps(bufnr)
   local tracked = keymapped_buffers[bufnr]
   if tracked then
-    for _, lhs in ipairs(tracked) do
-      del_keymap(bufnr, lhs)
+    for _, entry in ipairs(tracked) do
+      del_keymap(bufnr, entry[1], entry[2])
     end
   end
 end
@@ -47,7 +48,14 @@ local function set_buffer_keymaps(bufnr)
   local function set(lhs, rhs, desc)
     if is_enabled(lhs) then
       vim.keymap.set("n", lhs, rhs, { buffer = bufnr, noremap = true, silent = true, nowait = true, desc = desc })
-      table.insert(mapped, lhs)
+      table.insert(mapped, { "n", lhs })
+    end
+  end
+
+  local function set_visual(lhs, rhs, desc)
+    if is_enabled(lhs) then
+      vim.keymap.set("x", lhs, rhs, { buffer = bufnr, noremap = true, silent = true, nowait = true, desc = desc })
+      table.insert(mapped, { "x", lhs })
     end
   end
 
@@ -87,6 +95,8 @@ local function set_buffer_keymaps(bufnr)
   if readonly then
     -- READONLY MODE: Full review keymaps
     set(km.readonly_add, function() comments.add_with_menu() end, "Add comment (pick type)")
+    set_visual(km.readonly_add, ":<C-u>lua require('review.comments').add_for_range()<CR>", "Add comment for selection")
+    set(km.readonly_add_file, function() comments.file_comment() end, "File comment")
     set(km.readonly_delete, function() comments.delete_at_cursor() end, "Delete comment")
     set(km.readonly_edit, function() comments.edit_at_cursor() end, "Edit comment")
     set(km.list_comments, function() comments.list() end, "List all comments")
@@ -95,6 +105,19 @@ local function set_buffer_keymaps(bufnr)
     set(km.clear_comments, function() require("review").clear() end, "Clear all comments")
     set(km.next_comment, function() comments.goto_next() end, "Next comment")
     set(km.prev_comment, function() comments.goto_prev() end, "Previous comment")
+  else
+    -- EDIT MODE: Typed add keymaps with visual mode support
+    set(km.add_note, function() comments.add_at_cursor("note") end, "Add note")
+    set_visual(km.add_note, ":<C-u>lua require('review.comments').add_for_range('note')<CR>", "Add note for selection")
+    set(km.add_suggestion, function() comments.add_at_cursor("suggestion") end, "Add suggestion")
+    set_visual(km.add_suggestion, ":<C-u>lua require('review.comments').add_for_range('suggestion')<CR>", "Add suggestion for selection")
+    set(km.add_issue, function() comments.add_at_cursor("issue") end, "Add issue")
+    set_visual(km.add_issue, ":<C-u>lua require('review.comments').add_for_range('issue')<CR>", "Add issue for selection")
+    set(km.add_praise, function() comments.add_at_cursor("praise") end, "Add praise")
+    set_visual(km.add_praise, ":<C-u>lua require('review.comments').add_for_range('praise')<CR>", "Add praise for selection")
+    set(km.add_file_comment, function() comments.file_comment() end, "File comment")
+    set(km.delete_comment, function() comments.delete_at_cursor() end, "Delete comment")
+    set(km.edit_comment, function() comments.edit_at_cursor() end, "Edit comment")
   end
 
   -- Navigation and close - available in both modes (or edit mode only for nav)

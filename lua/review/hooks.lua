@@ -121,6 +121,24 @@ function M.get_cursor_position()
   return normalize_path(vim.fn.fnamemodify(file_path, ":.")), cursor[1]
 end
 
+---@return string|nil file path
+---@return number|nil start line
+---@return number|nil end line
+function M.get_visual_range()
+  local start_line = vim.fn.line("'<")
+  local end_line = vim.fn.line("'>")
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
+  end
+
+  local file, _ = M.get_cursor_position()
+  if not file then
+    return nil, nil, nil
+  end
+
+  return file, start_line, end_line
+end
+
 ---@return number|nil original buffer
 ---@return number|nil modified buffer
 function M.get_buffers()

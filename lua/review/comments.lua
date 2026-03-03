@@ -40,6 +40,63 @@ function M.add_with_menu()
   M.add_at_cursor()
 end
 
+---@param initial_type? "note"|"suggestion"|"issue"|"praise"
+function M.file_comment(initial_type)
+  local file = hooks.get_cursor_position()
+  if not file then
+    notify("Could not determine file", vim.log.levels.WARN)
+    return
+  end
+
+  local existing = store.get_file_comment(file)
+  if existing then
+    popup.open(existing.type, existing.text, function(new_type, text)
+      if new_type and text then
+        store.update(existing.id, text, new_type)
+        vim.schedule(function()
+          marks.refresh()
+        end)
+        notify("File comment updated", vim.log.levels.INFO)
+      end
+    end)
+  else
+    popup.open(initial_type or "note", nil, function(comment_type, text)
+      if comment_type and text then
+        store.add(file, 0, comment_type, text)
+        vim.schedule(function()
+          marks.refresh()
+        end)
+        notify(string.format("Added %s file comment", comment_type), vim.log.levels.INFO)
+      end
+    end)
+  end
+end
+
+---@param initial_type? "note"|"suggestion"|"issue"|"praise"
+function M.add_for_range(initial_type)
+  local file, start_line, end_line = hooks.get_visual_range()
+  if not file or not start_line or not end_line then
+    notify("Could not determine visual selection", vim.log.levels.WARN)
+    return
+  end
+
+  local existing = store.get_overlapping(file, start_line, end_line)
+  if existing then
+    notify("Comment already exists in this range. Use edit instead.", vim.log.levels.WARN)
+    return
+  end
+
+  popup.open(initial_type or "note", nil, function(comment_type, text)
+    if comment_type and text then
+      store.add(file, start_line, comment_type, text, end_line)
+      vim.schedule(function()
+        marks.refresh()
+      end)
+      notify(string.format("Added %s comment", comment_type), vim.log.levels.INFO)
+    end
+  end)
+end
+
 function M.edit_at_cursor()
   local file, line = hooks.get_cursor_position()
   if not file or not line then
@@ -48,6 +105,9 @@ function M.edit_at_cursor()
   end
 
   local comment = store.get_at_line(file, line)
+  if not comment and line == 1 then
+    comment = store.get_file_comment(file)
+  end
   if not comment then
     notify("No comment at cursor position", vim.log.levels.WARN)
     return
@@ -73,6 +133,9 @@ function M.delete_at_cursor()
   end
 
   local comment = store.get_at_line(file, line)
+  if not comment and line == 1 then
+    comment = store.get_file_comment(file)
+  end
   if not comment then
     notify("No comment at cursor position", vim.log.levels.WARN)
     return
@@ -142,7 +205,15 @@ function M.list()
     local type_info = config.comment_types[comment.type]
     local icon = type_info and type_info.icon or "●"
     local name = type_info and type_info.name or comment.type
-    local display = string.format("%s %s:%d [%s] %s", icon, comment.file, comment.line, name, comment.text)
+    local location
+    if comment.line == 0 then
+      location = comment.file
+    elseif comment.line_end and comment.line_end ~= comment.line then
+      location = string.format("%s:%d-%d", comment.file, comment.line, comment.line_end)
+    else
+      location = string.format("%s:%d", comment.file, comment.line)
+    end
+    local display = string.format("%s %s [%s] %s", icon, location, name, comment.text)
     table.insert(items, { display = display, comment = comment })
   end
 
@@ -179,9 +250,10 @@ function M.list()
       end
     end
 
-    -- Jump to line after a short delay
+    -- Jump to line after a short delay (line 1 for file-level comments)
     vim.defer_fn(function()
-      pcall(vim.api.nvim_win_set_cursor, 0, { comment.line, 0 })
+      local target_line = comment.line == 0 and 1 or comment.line
+      pcall(vim.api.nvim_win_set_cursor, 0, { target_line, 0 })
     end, 100)
   end)
 end

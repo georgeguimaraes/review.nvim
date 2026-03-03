@@ -25,7 +25,15 @@ function M.generate_markdown()
   -- Numbered list of comments
   for i, comment in ipairs(all_comments) do
     local type_name = string.upper(comment.type)
-    table.insert(lines, string.format("%d. **[%s]** `%s:%d` - %s", i, type_name, comment.file, comment.line, comment.text))
+    local location
+    if comment.line == 0 then
+      location = comment.file
+    elseif comment.line_end and comment.line_end ~= comment.line then
+      location = string.format("%s:%d-%d", comment.file, comment.line, comment.line_end)
+    else
+      location = string.format("%s:%d", comment.file, comment.line)
+    end
+    table.insert(lines, string.format("%d. **[%s]** `%s` - %s", i, type_name, location, comment.text))
   end
 
   return table.concat(lines, "\n")
