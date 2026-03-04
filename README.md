@@ -9,7 +9,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
 - Multi-line comment support with box-style virtual text display
 - Comments displayed as signs, line highlights, and virtual text
-- Comments persist per branch (stored in `~/.local/share/nvim/review/`)
+- Comments persist per branch (stored in Neovim's XDG data directory: `~/.local/share/nvim/review/`)
 - Auto-export comments to clipboard when closing
 - Export format optimized for AI conversations
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
