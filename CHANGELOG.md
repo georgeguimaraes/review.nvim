@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.0...v1.6.1) (2026-03-04)
+
+
+### Documentation
+
+* add vim help file and g? entry to help popup ([ca6632b](https://github.com/georgeguimaraes/review.nvim/commit/ca6632ba5b9b37b7ed9f05946b513dc347db0f54))
+
 ## [1.6.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.5.0...v1.6.0) (2026-03-03)
 
 
