@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.2](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.1...v1.6.2) (2026-03-04)
+
+
+### Miscellaneous
+
+* move emoji after plugin name in README title ([2041881](https://github.com/georgeguimaraes/review.nvim/commit/2041881247801f0d13dc8c00ace04063a21d2245))
+* use review.nvim as plugin name consistently ([687cdb0](https://github.com/georgeguimaraes/review.nvim/commit/687cdb0dd8a2e4b1a38ff7f1aab577b123a71466))
+
+
+### Documentation
+
+* explain ~ prefix for old-side lines in export header ([1b32cd5](https://github.com/georgeguimaraes/review.nvim/commit/1b32cd50a780821a6a2d7ba4e333bccb10a595da))
+
 ## [1.6.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.0...v1.6.1) (2026-03-04)
 
 
