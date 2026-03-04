@@ -1,4 +1,4 @@
-# 🧐 review.nvim
+# review.nvim 🧐
 
 Code review annotations for codediff.nvim, optimized for AI feedback loops.
 
