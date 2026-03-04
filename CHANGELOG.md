@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.2...v1.6.3) (2026-03-04)
+
+
+### Documentation
+
+* mention XDG data directory for comment storage ([916209d](https://github.com/georgeguimaraes/review.nvim/commit/916209d72eb1e2992baa5c168724482a27d940dc))
+
 ## [1.6.2](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.1...v1.6.2) (2026-03-04)
 
 
