@@ -1,5 +1,112 @@
 # Changelog
 
+## [1.10.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.0...v1.10.0) (2026-03-05)
+
+
+### Features
+
+* add &lt;localleader&gt;cc to add comment with type picker in edit mode ([f788b03](https://github.com/georgeguimaraes/review.nvim/commit/f788b03e8b954332a3af32fa13420b7fe2fdaf05))
+* add commit picker and auto-jump to first hunk ([d828f63](https://github.com/georgeguimaraes/review.nvim/commit/d828f63c5ca2d50f8adaebfb33015cfb25fd0708))
+* add configurable file panel toggle keymap ([6cd2567](https://github.com/georgeguimaraes/review.nvim/commit/6cd2567ca5ac07b67366075b33dc83699690b772))
+* add sidekick.nvim integration ([1c183ee](https://github.com/georgeguimaraes/review.nvim/commit/1c183eef5a1ee55f086806e2f7131de480d6c28f))
+* allow open_commits to accept rev arguments directly ([#16](https://github.com/georgeguimaraes/review.nvim/issues/16)) ([97180f8](https://github.com/georgeguimaraes/review.nvim/commit/97180f86548253a6990bbeda3056e02df1d7e85d))
+* auto-export comments to clipboard on close ([2584566](https://github.com/georgeguimaraes/review.nvim/commit/258456653c8d4617f88e46222c03a54d96e113b1))
+* auto-switch to unified view on open ([d1a6a42](https://github.com/georgeguimaraes/review.nvim/commit/d1a6a426bd6976cb7bec57ac1ced991cdec61af4))
+* change keymaps - C for export, C-r for clear ([29f9f8b](https://github.com/georgeguimaraes/review.nvim/commit/29f9f8b78cd80efe4e5ac93979e859720174b69e))
+* Comment side awareness, help popup, and picker improvements ([#20](https://github.com/georgeguimaraes/review.nvim/issues/20)) ([fb70ca5](https://github.com/georgeguimaraes/review.nvim/commit/fb70ca5db078d95fadf87dcb52a6326c299d8a05))
+* improve edit mode and make all keymaps configurable ([#14](https://github.com/georgeguimaraes/review.nvim/issues/14)) ([e86a26d](https://github.com/georgeguimaraes/review.nvim/commit/e86a26db7f14f6207ad36c491d5010a28f966808))
+* improve UX with focus management and export preview ([cfa3561](https://github.com/georgeguimaraes/review.nvim/commit/cfa35612d2add9799dab716cf1accdd092c8aac6))
+* initial implementation of diffnotes.nvim ([2939401](https://github.com/georgeguimaraes/review.nvim/commit/2939401e054d148557e280b282ac3680fa7401ac))
+* multi-line comments with box-style virtual text ([693b9f2](https://github.com/georgeguimaraes/review.nvim/commit/693b9f25c7ba7ab53c6bb4f62e26fcc5eea42ac7))
+* persist comments per branch ([4433a78](https://github.com/georgeguimaraes/review.nvim/commit/4433a78b6d77ae7dd080d2e8a7006e36be5adc14))
+* scope storage to revision range, enforce contiguous commit selection ([378b0ea](https://github.com/georgeguimaraes/review.nvim/commit/378b0ea90bcd3f2d39da6e8bf8a18cfe78bfc774))
+* support single commit review with :Review commits SHA ([abe44ca](https://github.com/georgeguimaraes/review.nvim/commit/abe44ca1e7b3e893d5e708e9a56cb0158c8b4333))
+
+
+### Bug Fixes
+
+* bind picker reset to r instead of n, update help text ([d7d96a5](https://github.com/georgeguimaraes/review.nvim/commit/d7d96a50d789f836f5a3f12b6c49213bc3b17c9f))
+* enable syntax highlighting when reviewing commits ([#11](https://github.com/georgeguimaraes/review.nvim/issues/11)) ([d50dc2f](https://github.com/georgeguimaraes/review.nvim/commit/d50dc2f307d93cfc8672d5ee8aa27487f1b82bd7))
+* export preview buffer handling and focus restoration ([b48249a](https://github.com/georgeguimaraes/review.nvim/commit/b48249a51dff5bf14726979401b2ff1e32bcd951))
+* focus picker window on open ([507b111](https://github.com/georgeguimaraes/review.nvim/commit/507b11119e4285061d918d5c36c0ddce9c2111c9))
+* hide block cursor in commit picker ([fedd052](https://github.com/georgeguimaraes/review.nvim/commit/fedd05280753c4ba200e6dab799743b000e3881d))
+* issue keymaps not cleared on close ([#5](https://github.com/georgeguimaraes/review.nvim/issues/5)) ([98a1986](https://github.com/georgeguimaraes/review.nvim/commit/98a19868c389c03e007c8cbcb2e31d01fc020a6f))
+* lock cursor to checkbox column in picker, drop guicursor hack ([9339d67](https://github.com/georgeguimaraes/review.nvim/commit/9339d67a179d5c37243e04e7023c7c74c652ede4))
+* mark release PR as tagged after release creation ([b2a17b0](https://github.com/georgeguimaraes/review.nvim/commit/b2a17b03d888d9b2c4dcdba6c05f944eea748ff1))
+* pass file paths directly to render_for_buffer, focus right pane on tab enter ([a1759c2](https://github.com/georgeguimaraes/review.nvim/commit/a1759c26bcc9b6285f1772d7dcbe57c38095b197))
+* picker help text says select range ([6030157](https://github.com/georgeguimaraes/review.nvim/commit/6030157afd4040516d9f59d79f1d4f5e6fbb7333))
+* picker keymaps and remove select all option ([23c850b](https://github.com/georgeguimaraes/review.nvim/commit/23c850b362e88910ab47ee02173db684de530340))
+* **popup:** exit insert mode after submit, add configurable keymaps ([#17](https://github.com/georgeguimaraes/review.nvim/issues/17)) ([004ae79](https://github.com/georgeguimaraes/review.nvim/commit/004ae79ede88ce8655a777c87fb8d200c86b7bf6))
+* re-setup hooks after codediff layout toggle ([4de4962](https://github.com/georgeguimaraes/review.nvim/commit/4de4962ff6fedad5a94562fe2b00100db38c1933))
+* relativize paths against git root, align comment boxes across panes ([d71a621](https://github.com/georgeguimaraes/review.nvim/commit/d71a621c17e215707767db1c3c65e90e9af8cf09))
+* remove full-line Visual highlight from picker range selection ([eebdf35](https://github.com/georgeguimaraes/review.nvim/commit/eebdf35c73a3ceae2258b9401489958974f927a2))
+* remove invalid diff1_plain layout config ([7ef7d72](https://github.com/georgeguimaraes/review.nvim/commit/7ef7d72591dc2ab73dd71bf449d15f5a5bbcf5a4))
+* toggle layout for current entry explicitly ([001668d](https://github.com/georgeguimaraes/review.nvim/commit/001668d3da5217a91296015dad64a9af47fa26f9))
+* use cursorlineopt=line to avoid block cursor in picker ([3a02930](https://github.com/georgeguimaraes/review.nvim/commit/3a02930909c677262f01474917bd3f89e9c04d7a))
+* use localleader instead of leader for buffer-local edit mode keymaps ([19440b5](https://github.com/georgeguimaraes/review.nvim/commit/19440b57634a5e512334f9581f6c15a85bf0ff1d))
+
+
+### Miscellaneous
+
+* add Apache 2.0 license ([54c7aca](https://github.com/georgeguimaraes/review.nvim/commit/54c7aca13227c4eee82f0a59c33f8b34d54017b0))
+* add release-please config and manifest files ([71ad52a](https://github.com/georgeguimaraes/review.nvim/commit/71ad52acd8b96d51fd94d463cce2b8cb4a1b033b))
+* **main:** release 1.0.0 ([#1](https://github.com/georgeguimaraes/review.nvim/issues/1)) ([78c1c97](https://github.com/georgeguimaraes/review.nvim/commit/78c1c9742b3a43825d0d02753b72f08b4a38dab8))
+* **main:** release 1.1.0 ([#2](https://github.com/georgeguimaraes/review.nvim/issues/2)) ([f47e2a4](https://github.com/georgeguimaraes/review.nvim/commit/f47e2a4363cfcb22a259d09460df3531e988f986))
+* **main:** release 1.2.0 ([#3](https://github.com/georgeguimaraes/review.nvim/issues/3)) ([e730613](https://github.com/georgeguimaraes/review.nvim/commit/e730613d669f45c86bd87b1705e8db244d5f0a04))
+* **main:** release 1.3.0 ([#4](https://github.com/georgeguimaraes/review.nvim/issues/4)) ([d7184b5](https://github.com/georgeguimaraes/review.nvim/commit/d7184b5e192c607cc271effdfd2d558ad3b45175))
+* **main:** release 1.4.0 ([#7](https://github.com/georgeguimaraes/review.nvim/issues/7)) ([835f0da](https://github.com/georgeguimaraes/review.nvim/commit/835f0da4a0d5aaf6c96a4fb64ce3e7a358c57bec))
+* **main:** release 1.5.0 ([#12](https://github.com/georgeguimaraes/review.nvim/issues/12)) ([97d7d14](https://github.com/georgeguimaraes/review.nvim/commit/97d7d14b664a77d3276238007afe00b44d55b873))
+* **main:** release 1.6.0 ([#15](https://github.com/georgeguimaraes/review.nvim/issues/15)) ([96f8e06](https://github.com/georgeguimaraes/review.nvim/commit/96f8e062e4eb64c972c007559c14ad508360ebf5))
+* **main:** release 1.6.1 ([#21](https://github.com/georgeguimaraes/review.nvim/issues/21)) ([89283de](https://github.com/georgeguimaraes/review.nvim/commit/89283de64f3a1b26dffce9958638a194001157ee))
+* **main:** release 1.6.2 ([#22](https://github.com/georgeguimaraes/review.nvim/issues/22)) ([572fdcc](https://github.com/georgeguimaraes/review.nvim/commit/572fdcc1b9cd848ea63bf5bd919b2ab61fcd38af))
+* **main:** release 1.6.3 ([#23](https://github.com/georgeguimaraes/review.nvim/issues/23)) ([b3e906f](https://github.com/georgeguimaraes/review.nvim/commit/b3e906f127ed844527fb405db50d12a0dd4ce695))
+* **main:** release 1.7.0 ([#24](https://github.com/georgeguimaraes/review.nvim/issues/24)) ([ee95ce7](https://github.com/georgeguimaraes/review.nvim/commit/ee95ce72e5019691e1f94fe128014379c1a0c3c9))
+* **main:** release 1.8.0 ([#25](https://github.com/georgeguimaraes/review.nvim/issues/25)) ([831cb25](https://github.com/georgeguimaraes/review.nvim/commit/831cb25f775c9f3b83a370e970f9c10a9225f9fa))
+* **main:** release 1.8.1 ([#26](https://github.com/georgeguimaraes/review.nvim/issues/26)) ([3d89113](https://github.com/georgeguimaraes/review.nvim/commit/3d891133e6d00b5dd4c6d3eb6fafb60ca9d3ed81))
+* **main:** release 1.9.0 ([#27](https://github.com/georgeguimaraes/review.nvim/issues/27)) ([eb106db](https://github.com/georgeguimaraes/review.nvim/commit/eb106db57c01f103af1c90a462b8cfaf02e2c7e7))
+* move emoji after plugin name in README title ([2041881](https://github.com/georgeguimaraes/review.nvim/commit/2041881247801f0d13dc8c00ace04063a21d2245))
+* remove unused export config options (context_lines, include_file_stats) ([77e5a1a](https://github.com/georgeguimaraes/review.nvim/commit/77e5a1a794f80ad397e4c1985793daf9a8ef90e5))
+* use review.nvim as plugin name consistently ([687cdb0](https://github.com/georgeguimaraes/review.nvim/commit/687cdb0dd8a2e4b1a38ff7f1aab577b123a71466))
+
+
+### Documentation
+
+* add keymap examples to README ([f5e49ec](https://github.com/georgeguimaraes/review.nvim/commit/f5e49ec1b36f072a37414472df3b587687c43868))
+* add layout toggle and codediff help to keybindings ([63f1750](https://github.com/georgeguimaraes/review.nvim/commit/63f1750ee2882dc8565eb9a61c49b14acdc4735f))
+* add single commit usage to README and command desc ([ba5ba10](https://github.com/georgeguimaraes/review.nvim/commit/ba5ba1067663ee2e86a6942393c03edd04c52e61))
+* add vim help file and g? entry to help popup ([ca6632b](https://github.com/georgeguimaraes/review.nvim/commit/ca6632ba5b9b37b7ed9f05946b513dc347db0f54))
+* credit tuicr as inspiration ([845b334](https://github.com/georgeguimaraes/review.nvim/commit/845b334af0f542348a328dedd5381b22fe85bc38))
+* document keymap options ([3602c4e](https://github.com/georgeguimaraes/review.nvim/commit/3602c4ecb9abcd661c7e94815cd335f18beb527c))
+* explain ~ prefix for old-side lines in export header ([1b32cd5](https://github.com/georgeguimaraes/review.nvim/commit/1b32cd50a780821a6a2d7ba4e333bccb10a595da))
+* mention XDG data directory for comment storage ([916209d](https://github.com/georgeguimaraes/review.nvim/commit/916209d72eb1e2992baa5c168724482a27d940dc))
+* simplify config with opts ([4cccd98](https://github.com/georgeguimaraes/review.nvim/commit/4cccd98fa414725950811bf6c892a540d78a9e26))
+* update README with new features ([763d682](https://github.com/georgeguimaraes/review.nvim/commit/763d68205798b09e864662cd171a3ef41762e31c))
+* update repo username ([8ec6803](https://github.com/georgeguimaraes/review.nvim/commit/8ec68033afb2c91c60b0a81506f44a750376d2d4))
+
+
+### Code Refactoring
+
+* extract shared normalize_path, clean up review issues ([864904e](https://github.com/georgeguimaraes/review.nvim/commit/864904e8df1cd772a6b770b916d47ecbf6f697ea))
+* migrate from diffview.nvim to codediff.nvim ([416c10d](https://github.com/georgeguimaraes/review.nvim/commit/416c10db6bc6f6ca5b2331cb0cd7f3a330df416a))
+* rename plugin from diffnotes to review ([07f7dfd](https://github.com/georgeguimaraes/review.nvim/commit/07f7dfd7868d4b1d726f8f6b4c73b4ec0afd2d9d))
+* use title-based notifications ([1a3b3a5](https://github.com/georgeguimaraes/review.nvim/commit/1a3b3a5d3006daab0a37c19e94e0ef479d5ce636))
+
+
+### Tests
+
+* add integration tests for marks rendering ([fe7d884](https://github.com/georgeguimaraes/review.nvim/commit/fe7d884a386c7d17e04a63f0a256384a61141788))
+
+
+### Continuous Integration
+
+* add GitHub Actions workflow for tests ([839ef48](https://github.com/georgeguimaraes/review.nvim/commit/839ef4807fbeb4c6c6e1f961160d81fc4de2520b))
+* add release-please workflows ([b90cbe9](https://github.com/georgeguimaraes/review.nvim/commit/b90cbe9032168426fe70ddc357d81aa08105740a))
+
+
+### Performance Improvements
+
+* only update changed line on selection toggle ([c2f7285](https://github.com/georgeguimaraes/review.nvim/commit/c2f7285d8b2ed3847e9ff8c82244be2267be2654))
+
 ## [1.9.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.8.1...v1.9.0) (2026-03-05)
 
 
