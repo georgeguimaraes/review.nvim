@@ -39,6 +39,17 @@ function M.setup(opts)
     end,
   })
 
+  -- Re-setup hooks when codediff recreates buffers (e.g. layout toggle)
+  vim.api.nvim_create_autocmd("User", {
+    group = augroup,
+    pattern = { "CodeDiffOpen", "CodeDiffFileSelect" },
+    callback = function()
+      vim.defer_fn(function()
+        M._check_codediff_session()
+      end, 100)
+    end,
+  })
+
   initialized = true
 end
 
