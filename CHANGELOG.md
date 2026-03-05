@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.7.0...v1.8.0) (2026-03-05)
+
+
+### Features
+
+* support single commit review with :Review commits SHA ([abe44ca](https://github.com/georgeguimaraes/review.nvim/commit/abe44ca1e7b3e893d5e708e9a56cb0158c8b4333))
+
+
+### Documentation
+
+* add single commit usage to README and command desc ([ba5ba10](https://github.com/georgeguimaraes/review.nvim/commit/ba5ba1067663ee2e86a6942393c03edd04c52e61))
+
 ## [1.7.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.3...v1.7.0) (2026-03-05)
 
 
