@@ -53,13 +53,13 @@ M.defaults = {
   },
   keymaps = {
     -- Edit mode (leader-based)
-    add_note = "<leader>cn",
-    add_suggestion = "<leader>cs",
-    add_issue = "<leader>ci",
-    add_praise = "<leader>cp",
-    add_file_comment = "<leader>cf",
-    delete_comment = "<leader>cd",
-    edit_comment = "<leader>ce",
+    add_note = "<localleader>cn",
+    add_suggestion = "<localleader>cs",
+    add_issue = "<localleader>ci",
+    add_praise = "<localleader>cp",
+    add_file_comment = "<localleader>cf",
+    delete_comment = "<localleader>cd",
+    edit_comment = "<localleader>ce",
     -- Navigation
     next_comment = "]n",
     prev_comment = "[n",

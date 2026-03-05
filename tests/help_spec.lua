@@ -26,7 +26,7 @@ describe("review.keymaps help", function()
     end)
 
     it("leaves leader-prefixed combos as-is", function()
-      assert.equals("<leader>cn", t.format_key("<leader>cn"))
+      assert.equals("<localleader>cn", t.format_key("<localleader>cn"))
     end)
   end)
 

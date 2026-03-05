@@ -39,10 +39,9 @@ end
 ---@param key string
 ---@return string
 local function format_key(key)
-  -- Strip < > wrappers and make readable, but leave <leader> as-is
   local inner = key:match("^<(.+)>$")
   if not inner then return key end
-  if inner:lower() == "leader" then return key end
+  if inner:lower() == "leader" or inner:lower() == "localleader" then return key end
 
   -- Handle modifiers: C- -> Ctrl-, S- stays as S-
   inner = inner:gsub("^C%-", "Ctrl-")

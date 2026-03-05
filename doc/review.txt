@@ -153,13 +153,13 @@ EDIT MODE                                               *review-keymaps-edit*
 These keymaps are active when `codediff.readonly = false`:
 
     Key           Description ~
-    `<leader>cn`    Add note                            |n, x|
-    `<leader>cs`    Add suggestion                      |n, x|
-    `<leader>ci`    Add issue                           |n, x|
-    `<leader>cp`    Add praise                          |n, x|
-    `<leader>cf`    Add file-level comment              |n|
-    `<leader>ce`    Edit comment at cursor              |n|
-    `<leader>cd`    Delete comment at cursor            |n|
+    `<localleader>cn`    Add note                            |n, x|
+    `<localleader>cs`    Add suggestion                      |n, x|
+    `<localleader>ci`    Add issue                           |n, x|
+    `<localleader>cp`    Add praise                          |n, x|
+    `<localleader>cf`    Add file-level comment              |n|
+    `<localleader>ce`    Edit comment at cursor              |n|
+    `<localleader>cd`    Delete comment at cursor            |n|
 
 NAVIGATION                                               *review-keymaps-nav*
 

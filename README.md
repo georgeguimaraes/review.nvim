@@ -103,9 +103,9 @@ Lines prefixed with `~` refer to the old (left) side of the diff. Comments persi
 **Edit mode** (when `readonly = false`):
 | Key | Action |
 |-----|--------|
-| `<leader>cn/cs/ci/cp` | Add Note/Suggestion/Issue/Praise |
-| `<leader>cd` | Delete comment |
-| `<leader>ce` | Edit comment |
+| `<localleader>cn/cs/ci/cp` | Add Note/Suggestion/Issue/Praise |
+| `<localleader>cd` | Delete comment |
+| `<localleader>ce` | Edit comment |
 
 **Comment popup** (when adding/editing):
 | Key | Action |
@@ -155,12 +155,12 @@ require("review").setup({
     praise = { key = "p", name = "Praise", icon = "✨", hl = "ReviewPraise" },
   },
   keymaps = {
-    add_note = "<leader>cn",
-    add_suggestion = "<leader>cs",
-    add_issue = "<leader>ci",
-    add_praise = "<leader>cp",
-    delete_comment = "<leader>cd",
-    edit_comment = "<leader>ce",
+    add_note = "<localleader>cn",
+    add_suggestion = "<localleader>cs",
+    add_issue = "<localleader>ci",
+    add_praise = "<localleader>cp",
+    delete_comment = "<localleader>cd",
+    edit_comment = "<localleader>ce",
     next_comment = "]n",
     prev_comment = "[n",
     toggle_file_panel = "f",
