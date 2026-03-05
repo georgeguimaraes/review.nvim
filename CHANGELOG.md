@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.8.0...v1.8.1) (2026-03-05)
+
+
+### Miscellaneous
+
+* remove unused export config options (context_lines, include_file_stats) ([77e5a1a](https://github.com/georgeguimaraes/review.nvim/commit/77e5a1a794f80ad397e4c1985793daf9a8ef90e5))
+
 ## [1.8.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.7.0...v1.8.0) (2026-03-05)
 
 
