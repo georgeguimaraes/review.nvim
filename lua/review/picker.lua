@@ -99,18 +99,10 @@ local function format_line(idx, commit)
     table.insert(hl, { "ReviewPickerMeta", meta_start, line_len })
   end
 
-  return line, hl, in_range
+  return line, hl
 end
 
-local function apply_line_hl(buf, row, line_len, highlights, is_selected)
-  if is_selected then
-    vim.api.nvim_buf_set_extmark(buf, ns_id, row, 0, {
-      end_col = line_len,
-      hl_group = "Visual",
-      hl_eol = true,
-      priority = 100,
-    })
-  end
+local function apply_line_hl(buf, row, highlights)
   for _, hl in ipairs(highlights) do
     vim.api.nvim_buf_set_extmark(buf, ns_id, row, hl[2], {
       end_col = hl[3],
@@ -130,9 +122,9 @@ local function render_lines()
   local line_data = {}
 
   for i, commit in ipairs(commits) do
-    local line, hl, is_sel = format_line(i, commit)
+    local line, hl = format_line(i, commit)
     table.insert(lines, line)
-    table.insert(line_data, { hl = hl, is_selected = is_sel, len = #line })
+    table.insert(line_data, { hl = hl })
   end
 
   vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
@@ -142,7 +134,7 @@ local function render_lines()
   ns_id = vim.api.nvim_create_namespace("review_picker")
   vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
   for i, data in ipairs(line_data) do
-    apply_line_hl(buf, i - 1, data.len, data.hl, data.is_selected)
+    apply_line_hl(buf, i - 1, data.hl)
   end
 end
 
