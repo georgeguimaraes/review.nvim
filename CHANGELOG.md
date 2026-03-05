@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.7.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.3...v1.7.0) (2026-03-05)
+
+
+### Features
+
+* scope storage to revision range, enforce contiguous commit selection ([378b0ea](https://github.com/georgeguimaraes/review.nvim/commit/378b0ea90bcd3f2d39da6e8bf8a18cfe78bfc774))
+
+
+### Bug Fixes
+
+* bind picker reset to r instead of n, update help text ([d7d96a5](https://github.com/georgeguimaraes/review.nvim/commit/d7d96a50d789f836f5a3f12b6c49213bc3b17c9f))
+* hide block cursor in commit picker ([fedd052](https://github.com/georgeguimaraes/review.nvim/commit/fedd05280753c4ba200e6dab799743b000e3881d))
+* lock cursor to checkbox column in picker, drop guicursor hack ([9339d67](https://github.com/georgeguimaraes/review.nvim/commit/9339d67a179d5c37243e04e7023c7c74c652ede4))
+* pass file paths directly to render_for_buffer, focus right pane on tab enter ([a1759c2](https://github.com/georgeguimaraes/review.nvim/commit/a1759c26bcc9b6285f1772d7dcbe57c38095b197))
+* picker help text says select range ([6030157](https://github.com/georgeguimaraes/review.nvim/commit/6030157afd4040516d9f59d79f1d4f5e6fbb7333))
+* re-setup hooks after codediff layout toggle ([4de4962](https://github.com/georgeguimaraes/review.nvim/commit/4de4962ff6fedad5a94562fe2b00100db38c1933))
+* relativize paths against git root, align comment boxes across panes ([d71a621](https://github.com/georgeguimaraes/review.nvim/commit/d71a621c17e215707767db1c3c65e90e9af8cf09))
+* remove full-line Visual highlight from picker range selection ([eebdf35](https://github.com/georgeguimaraes/review.nvim/commit/eebdf35c73a3ceae2258b9401489958974f927a2))
+* use cursorlineopt=line to avoid block cursor in picker ([3a02930](https://github.com/georgeguimaraes/review.nvim/commit/3a02930909c677262f01474917bd3f89e9c04d7a))
+
+
+### Documentation
+
+* add layout toggle and codediff help to keybindings ([63f1750](https://github.com/georgeguimaraes/review.nvim/commit/63f1750ee2882dc8565eb9a61c49b14acdc4735f))
+
+
+### Code Refactoring
+
+* extract shared normalize_path, clean up review issues ([864904e](https://github.com/georgeguimaraes/review.nvim/commit/864904e8df1cd772a6b770b916d47ecbf6f697ea))
+
 ## [1.6.3](https://github.com/georgeguimaraes/review.nvim/compare/v1.6.2...v1.6.3) (2026-03-04)
 
 
