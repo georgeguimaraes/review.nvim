@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.8.1...v1.9.0) (2026-03-05)
+
+
+### Features
+
+* add &lt;localleader&gt;cc to add comment with type picker in edit mode ([f788b03](https://github.com/georgeguimaraes/review.nvim/commit/f788b03e8b954332a3af32fa13420b7fe2fdaf05))
+
+
+### Bug Fixes
+
+* use localleader instead of leader for buffer-local edit mode keymaps ([19440b5](https://github.com/georgeguimaraes/review.nvim/commit/19440b57634a5e512334f9581f6c15a85bf0ff1d))
+
 ## [1.8.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.8.0...v1.8.1) (2026-03-05)
 
 
