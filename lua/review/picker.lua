@@ -232,7 +232,7 @@ function M.open(callback)
       text = {
         top = " Select commits to review ",
         top_align = "center",
-        bottom = " <Space> select range | <CR> confirm | q quit | n clear ",
+        bottom = " <Space> select | r reset | <CR> confirm | q quit ",
         bottom_align = "center",
       },
     },
@@ -266,7 +266,7 @@ function M.open(callback)
   popup:map("n", "<CR>", function() confirm_selection(callback) end, map_opts)
   popup:map("n", "q", close_picker, map_opts)
   popup:map("n", "<Esc>", close_picker, map_opts)
-  popup:map("n", "n", select_none, map_opts)
+  popup:map("n", "r", select_none, map_opts)
 end
 
 return M
