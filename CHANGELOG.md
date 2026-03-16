@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.0...v1.9.1) (2026-03-16)
+
+
+### Bug Fixes
+
+* don't steal focus from floating windows during session init ([400dffe](https://github.com/georgeguimaraes/review.nvim/commit/400dffe09ddeda450959544fcb3d60d1834c5577)), closes [#29](https://github.com/georgeguimaraes/review.nvim/issues/29)
+
+
+### Documentation
+
+* recommend pinning to released tags in installation ([33622c8](https://github.com/georgeguimaraes/review.nvim/commit/33622c81154ded1d681ea033ed49e3e9061c0a19))
+
 ## [1.9.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.8.1...v1.9.0) (2026-03-05)
 
 
