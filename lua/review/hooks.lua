@@ -256,6 +256,26 @@ function M.on_file_changed(tabpage)
     return
   end
 
+  local orig_buf, mod_buf = lifecycle.get_buffers(tabpage)
+
+  -- Set syntax highlighting for the new file's buffers
+  local raw_orig_path, raw_mod_path = lifecycle.get_paths(tabpage)
+  set_buffer_filetype(orig_buf, raw_orig_path)
+  set_buffer_filetype(mod_buf, raw_mod_path)
+
+  -- Make buffers readonly if configured
+  local cfg = config.get()
+  if cfg.codediff.readonly then
+    if orig_buf and vim.api.nvim_buf_is_valid(orig_buf) then
+      vim.api.nvim_set_option_value("modifiable", false, { buf = orig_buf })
+      vim.api.nvim_set_option_value("readonly", true, { buf = orig_buf })
+    end
+    if mod_buf and vim.api.nvim_buf_is_valid(mod_buf) then
+      vim.api.nvim_set_option_value("modifiable", false, { buf = mod_buf })
+      vim.api.nvim_set_option_value("readonly", true, { buf = mod_buf })
+    end
+  end
+
   -- Re-render comments
   vim.defer_fn(function()
     marks.refresh()
