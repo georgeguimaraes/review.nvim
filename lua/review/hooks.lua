@@ -10,7 +10,10 @@ local current_tabpage = nil
 ---@type number|nil Autocmd group for buffer events
 local buf_augroup = nil
 
----Set filetype for a buffer based on file path
+---Set syntax highlighting for a buffer based on file path.
+---Uses treesitter directly instead of setting filetype to avoid triggering
+---FileType autocmds that other plugins (e.g. render-markdown.nvim) use to
+---attach to buffers, which can interfere with review popups.
 ---@param bufnr number
 ---@param path string|nil
 local function set_buffer_filetype(bufnr, path)
@@ -21,10 +24,16 @@ local function set_buffer_filetype(bufnr, path)
     return
   end
 
-  -- Use Neovim's built-in filetype detection
   local ft = vim.filetype.match({ filename = path, buf = bufnr })
   if ft then
-    vim.api.nvim_set_option_value("filetype", ft, { buf = bufnr })
+    -- Try to use treesitter directly for syntax highlighting without
+    -- triggering FileType autocmds from other plugins
+    local lang = vim.treesitter.language.get_lang(ft) or ft
+    local ts_ok = pcall(vim.treesitter.start, bufnr, lang)
+    if not ts_ok then
+      -- Fallback: set filetype if treesitter doesn't support the language
+      vim.api.nvim_set_option_value("filetype", ft, { buf = bufnr })
+    end
   end
 end
 

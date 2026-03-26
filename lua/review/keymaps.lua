@@ -317,6 +317,9 @@ function M.setup_keymaps(tabpage)
     group = augroup,
     callback = function()
       if vim.api.nvim_get_current_tabpage() ~= tabpage then return end
+      -- Skip floating windows (popups) to avoid overriding their keymaps
+      local win_config = vim.api.nvim_win_get_config(0)
+      if win_config.relative ~= "" then return end
       if not lifecycle.get_session(tabpage) then return end
       set_buffer_keymaps(vim.api.nvim_get_current_buf())
     end,
