@@ -43,7 +43,7 @@ function M.setup(opts)
   -- Re-setup hooks when codediff recreates buffers (e.g. layout toggle)
   vim.api.nvim_create_autocmd("User", {
     group = augroup,
-    pattern = { "CodeDiffOpen", "CodeDiffFileSelect" },
+    pattern = "CodeDiffOpen",
     callback = function()
       vim.defer_fn(function()
         M._check_codediff_session()
@@ -51,7 +51,35 @@ function M.setup(opts)
     end,
   })
 
+  -- On file selection, only refresh marks and keymaps — don't refocus
+  vim.api.nvim_create_autocmd("User", {
+    group = augroup,
+    pattern = "CodeDiffFileSelect",
+    callback = function()
+      vim.defer_fn(function()
+        M._on_file_select()
+      end, 100)
+    end,
+  })
+
   initialized = true
+end
+
+-- Handle file selection: refresh hooks/keymaps without stealing focus
+function M._on_file_select()
+  local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
+  if not ok then
+    return
+  end
+
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  local sess = lifecycle.get_session(tabpage)
+  if not sess then
+    return
+  end
+
+  hooks.on_file_changed(tabpage)
+  keymaps.setup_keymaps(tabpage)
 end
 
 -- Check if current tab is a CodeDiff session and set up hooks/keymaps
