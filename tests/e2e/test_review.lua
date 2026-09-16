@@ -158,9 +158,11 @@ local READY = [[(function()
     and vim.api.nvim_buf_line_count(0) > 1
 end)()]]
 
+-- Both conditions in one predicate: after a file switch the old buffer is
+-- "ready" until codediff swaps in the new one, which then needs its own setup.
 local function wait_ready(file)
-  wait_for(READY, "review keymaps on modified pane", 15000)
-  wait_for(string.format([[(require("review.hooks").get_cursor_position()) == %q]], file), "cursor in " .. file)
+  local pred = string.format([[%s and (require("review.hooks").get_cursor_position()) == %q]], READY, file)
+  wait_for(pred, "review keymaps on modified pane showing " .. file, 15000)
 end
 
 local function open_review()

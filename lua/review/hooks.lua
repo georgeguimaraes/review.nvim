@@ -10,17 +10,42 @@ local current_tabpage = nil
 ---@type number|nil Autocmd group for buffer events
 local buf_augroup = nil
 
+---@type table<number, boolean> Tabpages whose modified pane was already focused once
+local focused_tabpages = {}
+
+---Normalize a codediff path value to a plain string.
+---codediff >= July 2026 returns a Path table ({ relative, absolute }) from
+---lifecycle.get_paths; older versions return strings.
+---@param path string|table|nil
+---@return string|nil
+local function to_path_string(path)
+  if type(path) == "table" then
+    if path.absolute and path.absolute ~= "" then
+      return path.absolute
+    end
+    if path.relative and path.relative ~= "" then
+      return path.relative
+    end
+    return nil
+  end
+  if path == "" then
+    return nil
+  end
+  return path
+end
+
 ---Set syntax highlighting for a buffer based on file path.
 ---Uses treesitter directly instead of setting filetype to avoid triggering
 ---FileType autocmds that other plugins (e.g. render-markdown.nvim) use to
 ---attach to buffers, which can interfere with review popups.
 ---@param bufnr number
----@param path string|nil
+---@param path string|table|nil
 local function set_buffer_filetype(bufnr, path)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
-  if not path or path == "" then
+  path = to_path_string(path)
+  if not path then
     return
   end
 
@@ -83,27 +108,6 @@ function M.get_explorer(tabpage)
     end
   end
   return nil
-end
-
----Normalize a codediff path value to a plain string.
----codediff >= July 2026 returns a Path table ({ relative, absolute }) from
----lifecycle.get_paths; older versions return strings.
----@param path string|table|nil
----@return string|nil
-local function to_path_string(path)
-  if type(path) == "table" then
-    if path.absolute and path.absolute ~= "" then
-      return path.absolute
-    end
-    if path.relative and path.relative ~= "" then
-      return path.relative
-    end
-    return nil
-  end
-  if path == "" then
-    return nil
-  end
-  return path
 end
 
 ---Relativize a path against the git root for consistent storage/lookup
@@ -229,7 +233,6 @@ function M.on_session_created(tabpage)
 
   -- Set filetype for syntax highlighting (needed for commit reviews)
   local raw_orig_path, raw_mod_path = lifecycle.get_paths(tabpage)
-  raw_orig_path, raw_mod_path = to_path_string(raw_orig_path), to_path_string(raw_mod_path)
   set_buffer_filetype(orig_buf, raw_orig_path)
   set_buffer_filetype(mod_buf, raw_mod_path)
 
@@ -274,10 +277,15 @@ function M.on_session_created(tabpage)
     marks.refresh()
   end, 100)
 
-  -- Focus the modified (right) pane
-  vim.defer_fn(function()
-    M._focus_modified_pane(lifecycle, tabpage)
-  end, 150)
+  -- Focus the modified (right) pane, but only on the first setup of this
+  -- tabpage. CodeDiffOpen fires again on every file switch, and refocusing
+  -- then steals the cursor from users who moved to the explorer.
+  if not focused_tabpages[tabpage] then
+    focused_tabpages[tabpage] = true
+    vim.defer_fn(function()
+      M._focus_modified_pane(lifecycle, tabpage)
+    end, 150)
+  end
 end
 
 function M._focus_modified_pane(lifecycle, tabpage)
@@ -293,6 +301,9 @@ end
 
 -- Called when codediff session is closed
 function M.on_session_closed()
+  if current_tabpage then
+    focused_tabpages[current_tabpage] = nil
+  end
   current_tabpage = nil
   -- Clean up autocmds
   if buf_augroup then

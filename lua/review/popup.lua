@@ -31,7 +31,8 @@ function M.open(initial_type, initial_text, callback)
   local type_keys = { "note", "suggestion", "issue", "praise" }
   local current_type_idx = 1
 
-  local submit_hint = cfg.keymaps.popup_submit and string.format(" (%s: submit)", cfg.keymaps.popup_submit) or ""
+  local submit_key = cfg.keymaps.popup_submit
+  local submit_hint = submit_key and string.format(" (%s: submit)", submit_key:gsub("^<(.+)>$", "%1")) or ""
 
   -- Find initial type index
   if initial_type then
