@@ -4,6 +4,8 @@ Code review annotations for codediff.nvim, optimized for AI feedback loops.
 
 Inspired by [tuicr](https://github.com/agavra/tuicr).
 
+![review.nvim demo: adding typed comments in a codediff view and exporting them as markdown](assets/demo.gif)
+
 ## Features
 
 - Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
