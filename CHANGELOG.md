@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.9.2](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.1...v1.9.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* Follow codediff.nvim API changes for paths and explorer ([58a5b29](https://github.com/georgeguimaraes/review.nvim/commit/58a5b29fe53fbd38959c2a72de380f17317726dc)), closes [#39](https://github.com/georgeguimaraes/review.nvim/issues/39)
+* Keep review keymaps on the diff panes and refocus only once ([33256ea](https://github.com/georgeguimaraes/review.nvim/commit/33256eaaea53137f48958f7bb015181ff434defa))
+* prevent FileType autocmd conflicts with plugins like render-markdown.nvim ([211cc2f](https://github.com/georgeguimaraes/review.nvim/commit/211cc2f45af84ba2621b9b12cbf4e172b3bb50e6))
+* prevent focus stealing on file select and keymaps on explorer buffer ([63f2502](https://github.com/georgeguimaraes/review.nvim/commit/63f25027d038b7e54e53f0d17d781bd0d7bc71f3))
+* Restore buffer options when a review closes ([bc71bc4](https://github.com/georgeguimaraes/review.nvim/commit/bc71bc4fe0c6facdbdd2d3f5c4c024461c0daee2)), closes [#38](https://github.com/georgeguimaraes/review.nvim/issues/38)
+* show configured popup submit key ([db3bd60](https://github.com/georgeguimaraes/review.nvim/commit/db3bd607edf25d1f78d781c8ba40a16e227598ac))
+* support codediff &gt;= 2.50.0 typed Path return from get_paths ([50a8b54](https://github.com/georgeguimaraes/review.nvim/commit/50a8b549be1cc4b0197b02d9684b9c5724629080))
+
+
+### Miscellaneous
+
+* Add Dependabot for GitHub Actions ([#43](https://github.com/georgeguimaraes/review.nvim/issues/43)) ([d09662d](https://github.com/georgeguimaraes/review.nvim/commit/d09662da1d9aea623650823fdc951f8d1420b7c0))
+* **deps:** bump actions/checkout from 4 to 7 ([#46](https://github.com/georgeguimaraes/review.nvim/issues/46)) ([ccaec23](https://github.com/georgeguimaraes/review.nvim/commit/ccaec23e8f08be8325190ac2d17ddb9f43350f23))
+* **deps:** bump googleapis/release-please-action from 4 to 5 ([#45](https://github.com/georgeguimaraes/review.nvim/issues/45)) ([a15b8c2](https://github.com/georgeguimaraes/review.nvim/commit/a15b8c2f026508681a05910dc79a8ea43f7b2c67))
+
+
+### Documentation
+
+* Add demo gif to the README ([5e9f762](https://github.com/georgeguimaraes/review.nvim/commit/5e9f7628c3997e19382a82433145ddf01e27f7ae))
+* Record the demo in Tokyo Night ([ceca3b0](https://github.com/georgeguimaraes/review.nvim/commit/ceca3b01f9e53b950a67c5109199f6545265089c))
+
+
+### Tests
+
+* Migrate to mini.test and add e2e suite against real codediff ([f77246c](https://github.com/georgeguimaraes/review.nvim/commit/f77246c3071ed831cd27e6e9bda5ace89048ea54))
+
 ## [1.9.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.0...v1.9.1) (2026-03-16)
 
 
