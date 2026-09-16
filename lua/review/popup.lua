@@ -31,6 +31,8 @@ function M.open(initial_type, initial_text, callback)
   local type_keys = { "note", "suggestion", "issue", "praise" }
   local current_type_idx = 1
 
+  local submit_hint = cfg.keymaps.popup_submit and string.format(" (%s: submit)", cfg.keymaps.popup_submit) or ""
+
   -- Find initial type index
   if initial_type then
     for i, key in ipairs(type_keys) do
@@ -60,7 +62,7 @@ function M.open(initial_type, initial_text, callback)
     border = {
       style = "rounded",
       text = {
-        top = " Comment (C-s: submit) ",
+        top = " Comment" .. submit_hint .. " ",
         top_align = "center",
       },
     },
