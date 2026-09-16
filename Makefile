@@ -1,4 +1,4 @@
-.PHONY: test test-file test-e2e test-all deps
+.PHONY: test test-file test-e2e test-all deps demo
 
 # Tests persist comments via stdpath("data"); point that at a scratch dir.
 TEST_HOME = $(CURDIR)/.tests
@@ -38,3 +38,10 @@ deps/codediff.nvim:
 
 deps/nui.nvim:
 	git clone --depth 1 https://github.com/MunifTanjim/nui.nvim $@
+
+# README demo gif (needs vhs 0.11: https://github.com/charmbracelet/vhs)
+demo: deps deps/tokyonight.nvim
+	vhs assets/demo.tape
+
+deps/tokyonight.nvim:
+	git clone --depth 1 https://github.com/folke/tokyonight.nvim $@

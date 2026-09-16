@@ -1,6 +1,7 @@
 -- Neovim config for recording the README demo (see assets/demo.tape).
 -- Run from the repo root after `make deps`. REVIEW_DEMO_DIR is the repo to review.
 local root = vim.fn.getcwd()
+vim.opt.rtp:prepend(root .. "/deps/tokyonight.nvim")
 vim.opt.rtp:prepend(root .. "/deps/nui.nvim")
 vim.opt.rtp:prepend(root .. "/deps/codediff.nvim")
 vim.opt.rtp:prepend(root)
@@ -12,7 +13,7 @@ vim.opt.statusline = " %t %m"
 vim.opt.ruler = false
 vim.opt.showcmd = false
 vim.opt.shortmess:append("I")
-vim.cmd.colorscheme("default")
+vim.cmd.colorscheme("tokyonight-night")
 
 -- Keep the export off the real clipboard while recording.
 local clip = {}
