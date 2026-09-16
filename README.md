@@ -194,9 +194,16 @@ Lines prefixed with `~` (e.g. `:~45`) refer to the old (left) side of the diff. 
 
 ## Running Tests
 
+Tests use [mini.test](https://github.com/nvim-mini/mini.test). Dependencies are cloned into `deps/` on first run.
+
 ```bash
-make test
+make test        # unit tests (tests/test_*.lua)
+make test-e2e    # end-to-end: drives :Review in a child Neovim with real codediff.nvim + nui.nvim
+make test-all    # both
+make test-file FILE=tests/test_store.lua
 ```
+
+End-to-end tests compare screenshots against `tests/e2e/screenshots/`. If a UI change is intentional, delete the affected reference screenshot and re-run to regenerate it.
 
 ## License
 

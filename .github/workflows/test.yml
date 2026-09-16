@@ -18,9 +18,11 @@ jobs:
           neovim: true
           version: stable
 
-      - name: Install plenary.nvim
-        run: |
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
+      - name: Install test deps (mini.test, codediff.nvim, nui.nvim)
+        run: make deps
 
-      - name: Run tests
+      - name: Run unit tests
         run: make test
+
+      - name: Run e2e tests
+        run: make test-e2e

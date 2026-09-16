@@ -1,11 +1,7 @@
-local plenary_dir = os.getenv("PLENARY_DIR") or "/tmp/plenary.nvim"
-local is_not_a_directory = vim.fn.isdirectory(plenary_dir) == 0
-if is_not_a_directory then
-  vim.fn.system({ "git", "clone", "https://github.com/nvim-lua/plenary.nvim", plenary_dir })
-end
+-- Init for the mini.test runner. Unit tests run in this process; the e2e
+-- tests spawn a child Neovim configured by tests/e2e/child_init.lua.
+local root = vim.fn.getcwd()
+vim.opt.rtp:prepend(root)
+vim.opt.rtp:append(root .. "/deps/mini.test")
 
-vim.opt.rtp:append(".")
-vim.opt.rtp:append(plenary_dir)
-
-vim.cmd("runtime plugin/plenary.vim")
-require("plenary.busted")
+require("mini.test").setup()
