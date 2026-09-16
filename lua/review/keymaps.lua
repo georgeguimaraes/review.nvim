@@ -1,5 +1,7 @@
 local M = {}
 
+local hooks = require("review.hooks")
+
 local config = require("review.config")
 local comments = require("review.comments")
 local export = require("review.export")
@@ -226,10 +228,8 @@ local function set_buffer_keymaps(bufnr)
   -- File navigation helper
   local function navigate(direction)
     return function()
-      local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
-      if not ok then return end
       local tabpage = vim.api.nvim_get_current_tabpage()
-      local explorer_obj = lifecycle.get_explorer(tabpage)
+      local explorer_obj = hooks.get_explorer(tabpage)
       if explorer_obj then
         require("codediff.ui.explorer")["navigate_" .. direction](explorer_obj)
         vim.defer_fn(jump_to_first_hunk, 100)
@@ -271,10 +271,8 @@ local function set_buffer_keymaps(bufnr)
   set(km.next_file, navigate("next"), "Next file")
   set(km.prev_file, navigate("prev"), "Previous file")
   set(km.toggle_file_panel, function()
-    local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
-    if not ok then return end
     local tabpage = vim.api.nvim_get_current_tabpage()
-    local explorer_obj = lifecycle.get_explorer(tabpage)
+    local explorer_obj = hooks.get_explorer(tabpage)
     if explorer_obj then
       require("codediff.ui.explorer").toggle_visibility(explorer_obj)
     end

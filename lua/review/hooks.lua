@@ -54,12 +54,56 @@ function M.get_session()
   return lifecycle.get_session(current_tabpage)
 end
 
+---Get codediff's explorer object for a tabpage, if the session has one.
+---codediff < 4.0.6 exposed lifecycle.get_explorer; newer versions keep the
+---explorer as the session's side panel (lifecycle.get_panel(tabpage).view).
+---@param tabpage number
+---@return table|nil explorer
+function M.get_explorer(tabpage)
+  local lifecycle = get_lifecycle()
+  if not lifecycle then
+    return nil
+  end
+  if lifecycle.get_explorer then
+    return lifecycle.get_explorer(tabpage)
+  end
+  if lifecycle.get_panel then
+    local panel = lifecycle.get_panel(tabpage)
+    if panel and panel.name == "explorer" then
+      return panel.view
+    end
+  end
+  return nil
+end
+
+---Normalize a codediff path value to a plain string.
+---codediff >= July 2026 returns a Path table ({ relative, absolute }) from
+---lifecycle.get_paths; older versions return strings.
+---@param path string|table|nil
+---@return string|nil
+local function to_path_string(path)
+  if type(path) == "table" then
+    if path.absolute and path.absolute ~= "" then
+      return path.absolute
+    end
+    if path.relative and path.relative ~= "" then
+      return path.relative
+    end
+    return nil
+  end
+  if path == "" then
+    return nil
+  end
+  return path
+end
+
 ---Relativize a path against the git root for consistent storage/lookup
 ---@param path string|nil
 ---@param lifecycle table
 ---@param tabpage number
 ---@return string|nil
 local function relativize_path(path, lifecycle, tabpage)
+  path = to_path_string(path)
   if not path then
     return nil
   end
@@ -90,6 +134,7 @@ function M.get_cursor_position()
 
   -- Get paths from session
   local orig_path, mod_path = lifecycle.get_paths(current_tabpage)
+  orig_path, mod_path = to_path_string(orig_path), to_path_string(mod_path)
   local orig_buf, mod_buf = lifecycle.get_buffers(current_tabpage)
 
   -- Determine which file we're on based on buffer
@@ -175,6 +220,7 @@ function M.on_session_created(tabpage)
 
   -- Set filetype for syntax highlighting (needed for commit reviews)
   local raw_orig_path, raw_mod_path = lifecycle.get_paths(tabpage)
+  raw_orig_path, raw_mod_path = to_path_string(raw_orig_path), to_path_string(raw_mod_path)
   set_buffer_filetype(orig_buf, raw_orig_path)
   set_buffer_filetype(mod_buf, raw_mod_path)
 

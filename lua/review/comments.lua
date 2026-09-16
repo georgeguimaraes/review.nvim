@@ -237,21 +237,16 @@ function M.list()
     local comment = choice.comment
 
     -- Try to navigate to the file in codediff explorer
-    local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
-    if ok then
-      local tabpage = hooks.get_current_tabpage()
-      if tabpage then
-        local explorer = lifecycle.get_explorer(tabpage)
-        if explorer then
-          local explorer_mod = require("codediff.ui.explorer")
-          -- Find and select the file in explorer
-          -- This is a best-effort navigation
-          for i, node in ipairs(explorer.tree:get_nodes()) do
-            if node.path == comment.file then
-              explorer_mod.select_node(explorer, node)
-              break
-            end
-          end
+    local tabpage = hooks.get_current_tabpage()
+    local explorer = tabpage and hooks.get_explorer(tabpage)
+    if explorer then
+      local explorer_mod = require("codediff.ui.explorer")
+      -- Find and select the file in explorer
+      -- This is a best-effort navigation
+      for i, node in ipairs(explorer.tree:get_nodes()) do
+        if node.path == comment.file then
+          explorer_mod.select_node(explorer, node)
+          break
         end
       end
     end
