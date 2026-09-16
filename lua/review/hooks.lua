@@ -13,6 +13,37 @@ local buf_augroup = nil
 ---@type table<number, boolean> Tabpages whose modified pane was already focused once
 local focused_tabpages = {}
 
+---@type table<number, {modifiable: boolean, readonly: boolean}> Option values before review made a buffer readonly
+local saved_buf_options = {}
+
+---Make a buffer readonly for the review, remembering what it was before so
+---on_session_closed can put it back (working-tree buffers outlive the review).
+---@param bufnr number|nil
+local function make_readonly(bufnr)
+  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+  if not saved_buf_options[bufnr] then
+    saved_buf_options[bufnr] = {
+      modifiable = vim.api.nvim_get_option_value("modifiable", { buf = bufnr }),
+      readonly = vim.api.nvim_get_option_value("readonly", { buf = bufnr }),
+    }
+  end
+  vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
+  vim.api.nvim_set_option_value("readonly", true, { buf = bufnr })
+end
+
+---Restore modifiable/readonly on every buffer make_readonly touched.
+function M.restore_buffer_options()
+  for bufnr, opts in pairs(saved_buf_options) do
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_set_option_value("modifiable", opts.modifiable, { buf = bufnr })
+      vim.api.nvim_set_option_value("readonly", opts.readonly, { buf = bufnr })
+    end
+  end
+  saved_buf_options = {}
+end
+
 ---Normalize a codediff path value to a plain string.
 ---codediff >= July 2026 returns a Path table ({ relative, absolute }) from
 ---lifecycle.get_paths; older versions return strings.
@@ -237,16 +268,9 @@ function M.on_session_created(tabpage)
   set_buffer_filetype(mod_buf, raw_mod_path)
 
   -- Make buffers readonly if configured
-  local cfg = config.get()
-  if cfg.codediff.readonly then
-    if orig_buf and vim.api.nvim_buf_is_valid(orig_buf) then
-      vim.api.nvim_set_option_value("modifiable", false, { buf = orig_buf })
-      vim.api.nvim_set_option_value("readonly", true, { buf = orig_buf })
-    end
-    if mod_buf and vim.api.nvim_buf_is_valid(mod_buf) then
-      vim.api.nvim_set_option_value("modifiable", false, { buf = mod_buf })
-      vim.api.nvim_set_option_value("readonly", true, { buf = mod_buf })
-    end
+  if config.get().codediff.readonly then
+    make_readonly(orig_buf)
+    make_readonly(mod_buf)
   end
 
   -- Clear old autocmds
@@ -305,6 +329,7 @@ function M.on_session_closed()
     focused_tabpages[current_tabpage] = nil
   end
   current_tabpage = nil
+  M.restore_buffer_options()
   -- Clean up autocmds
   if buf_augroup then
     pcall(vim.api.nvim_del_augroup_by_id, buf_augroup)
@@ -330,16 +355,9 @@ function M.on_file_changed(tabpage)
   set_buffer_filetype(mod_buf, raw_mod_path)
 
   -- Make buffers readonly if configured
-  local cfg = config.get()
-  if cfg.codediff.readonly then
-    if orig_buf and vim.api.nvim_buf_is_valid(orig_buf) then
-      vim.api.nvim_set_option_value("modifiable", false, { buf = orig_buf })
-      vim.api.nvim_set_option_value("readonly", true, { buf = orig_buf })
-    end
-    if mod_buf and vim.api.nvim_buf_is_valid(mod_buf) then
-      vim.api.nvim_set_option_value("modifiable", false, { buf = mod_buf })
-      vim.api.nvim_set_option_value("readonly", true, { buf = mod_buf })
-    end
+  if config.get().codediff.readonly then
+    make_readonly(orig_buf)
+    make_readonly(mod_buf)
   end
 
   -- Re-render comments

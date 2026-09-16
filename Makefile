@@ -1,6 +1,9 @@
 .PHONY: test test-file test-e2e test-all deps
 
-NVIM_TEST = nvim --headless --noplugin -u tests/minimal_init.lua
+# Tests persist comments via stdpath("data"); point that at a scratch dir.
+TEST_HOME = $(CURDIR)/.tests
+NVIM_TEST = XDG_DATA_HOME=$(TEST_HOME)/data XDG_STATE_HOME=$(TEST_HOME)/state XDG_CACHE_HOME=$(TEST_HOME)/cache XDG_CONFIG_HOME=$(TEST_HOME)/config \
+	nvim --headless --noplugin -u tests/minimal_init.lua
 
 # Unit tests: tests/test_*.lua, run in-process
 test: deps/mini.test

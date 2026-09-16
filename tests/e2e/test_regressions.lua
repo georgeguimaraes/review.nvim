@@ -171,6 +171,22 @@ T["#30 review does not fire FileType on the diff buffers it highlights"] = funct
   eq(child.lua_get([[vim.treesitter.highlighter.active[(require("codediff.ui.lifecycle").get_buffers(vim.api.nvim_get_current_tabpage()))] ~= nil]]), true)
 end
 
+T["#38 closing the review restores modifiable on the working-tree buffer"] = function()
+  open_review()
+  local mod_buf = child.lua_get([[select(2, require("codediff.ui.lifecycle").get_buffers(vim.api.nvim_get_current_tabpage()))]])
+  eq(child.api.nvim_get_option_value("modifiable", { buf = mod_buf }), false) -- readonly mode is on
+  child.type_keys("q")
+  wait_for([[vim.fn.tabpagenr("$") == 1]], "review closed")
+  if child.api.nvim_buf_is_valid(mod_buf) then
+    eq(child.api.nvim_get_option_value("modifiable", { buf = mod_buf }), true)
+    eq(child.api.nvim_get_option_value("readonly", { buf = mod_buf }), false)
+  end
+  -- what a user does next: open the file normally and expect to edit it
+  child.cmd("edit " .. vim.fn.fnameescape(repo .. "/api.lua"))
+  eq(child.lua_get([[vim.bo.modifiable]]), true)
+  eq(child.lua_get([[vim.bo.readonly]]), false)
+end
+
 T["#40 popup title shows the configured submit key"] = function()
   child.lua([[require("review.config").setup({ keymaps = { popup_submit = "<C-CR>" } })]])
   open_review()
