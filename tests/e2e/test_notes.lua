@@ -112,6 +112,16 @@ T["edits and deletes the note at the cursor"] = function()
   E.wait_for([[#vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("review"), 0, -1, {}) == 0]], "mark removed")
 end
 
+T["notes follow edits once the file is written"] = function()
+  child.cmd("edit api.lua")
+  child.type_keys("3G")
+  add_note_here("on the function")
+  child.type_keys("gg", "O", "-- new first line", "<Esc>")
+  child.cmd("write")
+  E.wait_for([[require("review.store").get_all()[1].line == 4]], "note moved to line 4")
+  eq(child.api.nvim_buf_get_lines(0, 3, 4, false), { "function M.a()" })
+end
+
 T["refuses files outside the repository"] = function()
   local outside = vim.fn.tempname() .. ".lua"
   vim.fn.writefile({ "elsewhere" }, outside)

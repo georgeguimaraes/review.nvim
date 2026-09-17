@@ -178,6 +178,22 @@ function M.update(id, text, new_type)
   return false
 end
 
+---Move a comment to new lines (used when the buffer it lives in was edited).
+---@param id string
+---@param line number
+---@param line_end? number
+---@return boolean
+function M.move(id, line, line_end)
+  local comment = M.get(id)
+  if not comment then
+    return false
+  end
+  comment.line = line
+  comment.line_end = (line_end and line_end ~= line) and line_end or nil
+  persist()
+  return true
+end
+
 ---@param id string
 ---@return boolean
 function M.delete(id)

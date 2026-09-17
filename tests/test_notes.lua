@@ -79,4 +79,42 @@ T["render_plain_buffer"]["draws marks for the buffer's file"] = function()
   neq(extmarks[1][4].virt_lines, nil)
 end
 
+T["sync_positions"] = MiniTest.new_set()
+
+local function open_target(lines)
+  bufnr = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_buf_set_name(bufnr, "tests/notes_target.lua")
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  vim.api.nvim_set_current_buf(bufnr)
+end
+
+T["sync_positions"]["follows lines inserted above a note"] = function()
+  open_target({ "one", "two", "three" })
+  local comment = store.add("tests/notes_target.lua", 3, "note", "on three")
+  marks.render_plain_buffer(bufnr)
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, { "added", "added" })
+  eq(marks.sync_positions(bufnr), 1)
+  eq(store.get(comment.id).line, 5)
+  eq(vim.api.nvim_buf_get_lines(bufnr, 4, 5, false), { "three" })
+end
+
+T["sync_positions"]["keeps both ends of a range"] = function()
+  open_target({ "one", "two", "three", "four" })
+  local comment = store.add("tests/notes_target.lua", 2, "note", "two to three", 3)
+  marks.render_plain_buffer(bufnr)
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, {}) -- delete line one
+  eq(marks.sync_positions(bufnr), 1)
+  eq(store.get(comment.id).line, 1)
+  eq(store.get(comment.id).line_end, 2)
+end
+
+T["sync_positions"]["reports nothing moved when nothing changed"] = function()
+  open_target({ "one", "two" })
+  store.add("tests/notes_target.lua", 2, "note", "still here")
+  marks.render_plain_buffer(bufnr)
+  eq(marks.sync_positions(bufnr), 0)
+end
+
 return T

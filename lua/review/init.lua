@@ -81,6 +81,16 @@ function M.setup(opts)
     end,
   })
 
+  -- Edits move the marks; on write, move the stored lines with them
+  vim.api.nvim_create_autocmd("BufWritePost", {
+    group = augroup,
+    callback = function(ev)
+      if hooks.plain_buffer_file(ev.buf) then
+        require("review.marks").sync_positions(ev.buf)
+      end
+    end,
+  })
+
   initialized = true
 end
 

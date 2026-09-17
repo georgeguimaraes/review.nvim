@@ -37,6 +37,9 @@ end
 ---@param bufnr number
 ---@param side? "old"|"new"
 ---@param file_override? string file path to use directly instead of parsing buffer name
+---@type table<number, table<string, {start: number, stop: number|nil}>> extmark ids by buffer and comment id
+local tracked = {}
+
 function M.render_for_buffer(bufnr, side, file_override)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
@@ -68,6 +71,7 @@ function M.render_for_buffer(bufnr, side, file_override)
   local comments = store.get_for_file(file, side)
 
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+  tracked[bufnr] = {}
 
   local cfg = config.get()
 
@@ -106,7 +110,7 @@ function M.render_for_buffer(bufnr, side, file_override)
 
       if line_start >= 0 then
         if is_range then
-          pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, line_start, 0, {
+          local _, start_id = pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, line_start, 0, {
             sign_text = icon,
             sign_hl_group = hl,
             line_hl_group = line_hl,
@@ -118,19 +122,25 @@ function M.render_for_buffer(bufnr, side, file_override)
             })
           end
 
-          pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, line_end_0, 0, {
+          local _, stop_id = pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, line_end_0, 0, {
             line_hl_group = line_hl,
             virt_lines = virt_lines,
             virt_lines_above = false,
           })
+          if type(start_id) == "number" then
+            tracked[bufnr][comment.id] = { start = start_id, stop = type(stop_id) == "number" and stop_id or nil }
+          end
         else
-          pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, line_start, 0, {
+          local _, mark_id = pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, line_start, 0, {
             sign_text = icon,
             sign_hl_group = hl,
             line_hl_group = line_hl,
             virt_lines = virt_lines,
             virt_lines_above = false,
           })
+          if type(mark_id) == "number" then
+            tracked[bufnr][comment.id] = { start = mark_id }
+          end
         end
       end
     end
@@ -244,7 +254,40 @@ function M.render_plain_buffer(bufnr)
   end
 end
 
+---Extmarks move with edits; write the rows they ended up on back to the
+---store so notes keep pointing at the same code after lines are added or
+---removed above them. Returns how many comments moved.
+---@param bufnr number
+---@return number moved
+function M.sync_positions(bufnr)
+  local marks_for_buf = tracked[bufnr]
+  if not marks_for_buf or not vim.api.nvim_buf_is_valid(bufnr) then
+    return 0
+  end
+  local moved = 0
+  for comment_id, ids in pairs(marks_for_buf) do
+    local comment = store.get(comment_id)
+    if comment and comment.line > 0 then
+      local start = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns_id, ids.start, {})
+      local stop = ids.stop and vim.api.nvim_buf_get_extmark_by_id(bufnr, ns_id, ids.stop, {}) or nil
+      if start and start[1] then
+        local line = start[1] + 1
+        local line_end = (stop and stop[1]) and (stop[1] + 1) or nil
+        if line_end and line_end <= line then
+          line_end = nil
+        end
+        if line ~= comment.line or line_end ~= comment.line_end then
+          store.move(comment_id, line, line_end)
+          moved = moved + 1
+        end
+      end
+    end
+  end
+  return moved
+end
+
 function M.clear_all()
+  tracked = {}
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_valid(bufnr) then
       vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)

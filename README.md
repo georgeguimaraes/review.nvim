@@ -118,6 +118,8 @@ You don't need a diff open to leave a comment. `:Review note` on any line of any
 vim.keymap.set({ "n", "v" }, "<leader>rn", ":Review note<CR>", { desc = "Review note" })
 ```
 
+Notes follow your edits: they're anchored to extmarks while the buffer is open, and the stored line numbers are updated when you write the file, so inserting lines above a note doesn't leave it pointing at the wrong code.
+
 Files are resolved against the git repository of Neovim's working directory, so a note on a file from another repo is refused rather than filed in the wrong place.
 
 ## How comments are stored
