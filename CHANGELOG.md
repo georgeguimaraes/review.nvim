@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.2](https://github.com/georgeguimaraes/review.nvim/compare/v1.10.1...v1.10.2) (2026-09-17)
+
+
+### Documentation
+
+* Record the demo gifs in Victor Mono ([f72a347](https://github.com/georgeguimaraes/review.nvim/commit/f72a347538913ac558d2440dd3899426a2dd85ae))
+
 ## [1.10.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.10.0...v1.10.1) (2026-09-17)
 
 
