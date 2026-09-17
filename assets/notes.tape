@@ -3,7 +3,7 @@
 Output assets/notes.gif
 
 Set Shell zsh
-Set FontFamily "CaskaydiaCove Nerd Font"
+Set FontFamily "VictorMono Nerd Font"
 Set FontSize 15
 Set Width 1300
 Set Height 760
