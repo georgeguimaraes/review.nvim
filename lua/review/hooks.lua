@@ -162,15 +162,32 @@ end
 ---@return string|nil file path
 ---@return number|nil line number
 ---@return "old"|"new"|nil side
+---A comment target in an ordinary file buffer (no codediff involved):
+---the file relative to the git root, side "new".
+---@param bufnr? number
+---@return string|nil file
+function M.plain_buffer_file(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= "" then
+    return nil
+  end
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == "" or name:match("^%a[%w+.-]*://") then
+    return nil
+  end
+  return require("review.utils").relative_to_root(name)
+end
+
 function M.get_cursor_position()
   local lifecycle = get_lifecycle()
-  if not lifecycle or not current_tabpage then
-    return nil, nil, nil
-  end
-
-  local sess = lifecycle.get_session(current_tabpage)
+  local sess = lifecycle and current_tabpage and lifecycle.get_session(current_tabpage)
   if not sess then
-    return nil, nil, nil
+    -- No review open: notes can still go on any file in the repo
+    local file = M.plain_buffer_file()
+    if not file then
+      return nil, nil, nil
+    end
+    return file, vim.api.nvim_win_get_cursor(0)[1], "new"
   end
 
   local cursor = vim.api.nvim_win_get_cursor(0)
@@ -193,13 +210,15 @@ function M.get_cursor_position()
   else
     -- Try to get path from buffer name
     local bufname = vim.api.nvim_buf_get_name(current_buf)
-    if bufname and bufname ~= "" then
-      -- Strip codediff:// prefix if present
-      if bufname:match("^codediff://") then
-        file_path = mod_path or orig_path
-      else
-        file_path = vim.fn.fnamemodify(bufname, ":.")
+    if bufname:match("^codediff://") then
+      file_path = mod_path or orig_path
+    else
+      -- An ordinary file buffer while a review is open elsewhere
+      local file = M.plain_buffer_file(current_buf)
+      if not file then
+        return nil, nil, nil
       end
+      return file, cursor[1], "new"
     end
   end
 

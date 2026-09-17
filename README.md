@@ -17,6 +17,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
 - Commit picker modal to select specific commits to review
 - Branch picker to review a branch against its base (merge-base aware, no checkout needed)
+- Notes on any file while you browse, exported alongside review comments
 - Built on top of codediff.nvim
 
 ## Requirements
@@ -58,6 +59,9 @@ Using lazy.nvim:
 :Review commits REV1 REV2  " Review specific revision range (skips picker)
 :Review branch       " Pick a branch to review against main/master (current branch first)
 :Review branch TARGET [BASE]  " Review TARGET (e.g. origin/feature) against BASE (skips picker)
+:Review note         " Comment on the current line of any file (:'<,'>Review note for a range)
+:Review edit         " Edit the comment at the cursor
+:Review delete       " Delete the comment at the cursor
 :Review close        " Close: export to clipboard, then archive and clear comments
 :Review export       " Export comments to clipboard
 :Review preview      " Preview exported markdown in split
@@ -105,6 +109,16 @@ When you're done, press `q` to close the review. This automatically copies all y
 ```
 
 Lines prefixed with `~` refer to the old (left) side of the diff.
+
+## Notes on any file
+
+You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repository opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer as you browse, show up on the diff if you open a review later, and come out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. There are no default keymaps outside the diff; something like this does it:
+
+```lua
+vim.keymap.set({ "n", "v" }, "<leader>rn", ":Review note<CR>", { desc = "Review note" })
+```
+
+Files are resolved against the git repository of Neovim's working directory, so a note on a file from another repo is refused rather than filed in the wrong place.
 
 ## How comments are stored
 

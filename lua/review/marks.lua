@@ -57,7 +57,7 @@ function M.render_for_buffer(bufnr, side, file_override)
         file = normalize_path(path)
       end
     else
-      file = normalize_path(vim.fn.fnamemodify(bufname, ":."))
+      file = require("review.utils").relative_to_root(bufname) or normalize_path(vim.fn.fnamemodify(bufname, ":."))
     end
   end
 
@@ -230,6 +230,17 @@ function M.refresh()
 
   if orig_buf and mod_buf and (orig_path or mod_path) then
     M.align_buffers(orig_buf, mod_buf, orig_path, mod_path)
+  end
+end
+
+---Render comments on an ordinary file buffer (used for notes outside the
+---diff). Session buffers are handled by refresh().
+---@param bufnr? number
+function M.render_plain_buffer(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local file = require("review.hooks").plain_buffer_file(bufnr)
+  if file then
+    M.render_for_buffer(bufnr, "new", file)
   end
 end
 

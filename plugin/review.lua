@@ -14,6 +14,19 @@ local subcommands = {
   clear = { fn = function() require("review").clear() end, desc = "Clear all comments" },
   list = { fn = function() require("review.comments").list() end, desc = "List all comments" },
   toggle = { fn = function() require("review").toggle_readonly() end, desc = "Toggle readonly/edit mode" },
+  note = {
+    fn = function(_, opts)
+      local comments = require("review.comments")
+      if opts.range > 0 then
+        comments.add_for_range(nil, opts.line1, opts.line2)
+      else
+        comments.add_with_menu()
+      end
+    end,
+    desc = "Add a comment on the current line (or :'<,'>Review note for a range) in any file",
+  },
+  edit = { fn = function() require("review.comments").edit_at_cursor() end, desc = "Edit the comment at the cursor" },
+  delete = { fn = function() require("review.comments").delete_at_cursor() end, desc = "Delete the comment at the cursor" },
 }
 
 local subcommand_names = vim.tbl_keys(subcommands)
@@ -31,12 +44,13 @@ vim.api.nvim_create_user_command("Review", function(opts)
   if subcmd then
     -- Pass remaining args to the subcommand
     local subargs = { unpack(args, 2) }
-    subcmd.fn(subargs)
+    subcmd.fn(subargs, opts)
   else
     vim.notify("Unknown subcommand: " .. cmd .. "\nAvailable: " .. table.concat(subcommand_names, ", "), vim.log.levels.ERROR, { title = "review.nvim" })
   end
 end, {
   nargs = "*",
+  range = true,
   complete = function(arg_lead, cmd_line)
     local parts = vim.split(cmd_line, "%s+", { trimempty = true })
     -- If still typing first arg (subcommand), complete subcommands

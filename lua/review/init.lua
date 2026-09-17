@@ -62,6 +62,25 @@ function M.setup(opts)
     end,
   })
 
+  -- Notes live on ordinary files too: draw them whenever such a buffer shows up
+  vim.api.nvim_create_autocmd("BufWinEnter", {
+    group = augroup,
+    callback = function(ev)
+      local file = hooks.plain_buffer_file(ev.buf)
+      if not file then
+        return
+      end
+      local orig_buf, mod_buf = hooks.get_buffers()
+      if ev.buf == orig_buf or ev.buf == mod_buf then
+        return -- the session hooks render these
+      end
+      store.load()
+      if #store.get_for_file(file) > 0 then
+        require("review.marks").render_for_buffer(ev.buf, "new", file)
+      end
+    end,
+  })
+
   initialized = true
 end
 

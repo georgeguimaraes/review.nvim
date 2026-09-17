@@ -9,8 +9,18 @@ local function notify(msg, level)
   vim.notify(msg, level, { title = "review.nvim" })
 end
 
+-- Re-render after a change: the review's panes and, for notes, the buffer
+-- the comment was made in (captured before the popup takes focus).
+local function refresh_marks(bufnr)
+  vim.schedule(function()
+    marks.refresh()
+    marks.render_plain_buffer(bufnr)
+  end)
+end
+
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
 function M.add_at_cursor(initial_type)
+  local target_buf = vim.api.nvim_get_current_buf()
   local file, line, side = hooks.get_cursor_position()
   if not file or not line then
     notify("Could not determine cursor position", vim.log.levels.WARN)
@@ -26,9 +36,7 @@ function M.add_at_cursor(initial_type)
   popup.open(initial_type or "note", nil, function(comment_type, text)
     if comment_type and text then
       store.add(file, line, comment_type, text, nil, side)
-      vim.schedule(function()
-        marks.refresh()
-      end)
+      refresh_marks(target_buf)
       notify(string.format("Added %s comment", comment_type), vim.log.levels.INFO)
     end
   end)
@@ -41,6 +49,7 @@ end
 
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
 function M.file_comment(initial_type)
+  local target_buf = vim.api.nvim_get_current_buf()
   local file = hooks.get_cursor_position()
   if not file then
     notify("Could not determine file", vim.log.levels.WARN)
@@ -52,9 +61,7 @@ function M.file_comment(initial_type)
     popup.open(existing.type, existing.text, function(new_type, text)
       if new_type and text then
         store.update(existing.id, text, new_type)
-        vim.schedule(function()
-          marks.refresh()
-        end)
+        refresh_marks(target_buf)
         notify("File comment updated", vim.log.levels.INFO)
       end
     end)
@@ -62,9 +69,7 @@ function M.file_comment(initial_type)
     popup.open(initial_type or "note", nil, function(comment_type, text)
       if comment_type and text then
         store.add(file, 0, comment_type, text)
-        vim.schedule(function()
-          marks.refresh()
-        end)
+        refresh_marks(target_buf)
         notify(string.format("Added %s file comment", comment_type), vim.log.levels.INFO)
       end
     end)
@@ -72,8 +77,19 @@ function M.file_comment(initial_type)
 end
 
 ---@param initial_type? "note"|"suggestion"|"issue"|"praise"
-function M.add_for_range(initial_type)
-  local file, start_line, end_line, side = hooks.get_visual_range()
+---@param start_line? number defaults to the visual selection
+---@param end_line? number
+function M.add_for_range(initial_type, start_line, end_line)
+  local target_buf = vim.api.nvim_get_current_buf()
+  local file, side
+  if start_line and end_line then
+    file, _, side = hooks.get_cursor_position()
+    if start_line > end_line then
+      start_line, end_line = end_line, start_line
+    end
+  else
+    file, start_line, end_line, side = hooks.get_visual_range()
+  end
   if not file or not start_line or not end_line then
     notify("Could not determine visual selection", vim.log.levels.WARN)
     return
@@ -88,15 +104,14 @@ function M.add_for_range(initial_type)
   popup.open(initial_type or "note", nil, function(comment_type, text)
     if comment_type and text then
       store.add(file, start_line, comment_type, text, end_line, side)
-      vim.schedule(function()
-        marks.refresh()
-      end)
+      refresh_marks(target_buf)
       notify(string.format("Added %s comment", comment_type), vim.log.levels.INFO)
     end
   end)
 end
 
 function M.edit_at_cursor()
+  local target_buf = vim.api.nvim_get_current_buf()
   local file, line, side = hooks.get_cursor_position()
   if not file or not line then
     notify("Could not determine cursor position", vim.log.levels.WARN)
@@ -116,15 +131,14 @@ function M.edit_at_cursor()
     if new_type and text then
       store.update(comment.id, text, new_type)
       -- Schedule refresh to run after popup is fully closed
-      vim.schedule(function()
-        marks.refresh()
-      end)
+      refresh_marks(target_buf)
       notify("Comment updated", vim.log.levels.INFO)
     end
   end)
 end
 
 function M.delete_at_cursor()
+  local target_buf = vim.api.nvim_get_current_buf()
   local file, line, side = hooks.get_cursor_position()
   if not file or not line then
     notify("Could not determine cursor position", vim.log.levels.WARN)
@@ -146,9 +160,7 @@ function M.delete_at_cursor()
     if choice == "Yes" then
       store.delete(comment.id)
       -- Schedule refresh to run after UI is closed
-      vim.schedule(function()
-        marks.refresh()
-      end)
+      refresh_marks(target_buf)
       notify("Comment deleted", vim.log.levels.INFO)
     end
   end)
