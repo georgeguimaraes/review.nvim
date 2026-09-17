@@ -106,6 +106,7 @@ T["edits and deletes the note at the cursor"] = function()
   E.wait_for(E.IN_POPUP, "edit popup")
   child.type_keys("<Esc>", "ggdG", "i", "final", "<C-s>") -- replace the prefilled text
   E.wait_for([[(require("review.store").get_all()[1] or {}).text == "final"]], "note updated")
+  E.wait_for(E.BACK_IN_DIFF, "popup closed") -- stopinsert is deferred; don't type into the file
   -- typed, not child.cmd: the confirmation prompt would block a synchronous request
   child.type_keys(":Review delete<CR>", "1<CR>")
   E.wait_for([[require("review.store").count() == 0]], "note deleted")

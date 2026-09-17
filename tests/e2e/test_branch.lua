@@ -140,6 +140,7 @@ T["warns about comments made on another branch"] = function()
   E.wait_for(E.IN_POPUP, "popup")
   child.type_keys("made on feature", "<C-s>")
   E.wait_for([[require("review.store").count() == 1]], "comment stored")
+  E.wait_for(E.BACK_IN_DIFF, "focus back in diff") -- stopinsert is deferred; don't type into the pane
   child.lua([[require("review.config").get().export.clear_on_close = false]])
   child.type_keys("q")
   E.wait_for([[vim.fn.tabpagenr("$") == 1]], "review closed")
