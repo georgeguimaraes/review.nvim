@@ -42,16 +42,26 @@ Using lazy.nvim:
     "esmuellert/codediff.nvim",
     "MunifTanjim/nui.nvim",
   },
-  cmd = { "Review" },
+  event = "VeryLazy",
   keys = {
-    { "<leader>r", "<cmd>Review<cr>", desc = "Review" },
-    { "<leader>R", "<cmd>Review commits<cr>", desc = "Review commits" },
+    { "<leader>rr", "<cmd>Review<cr>", desc = "Review working tree" },
+    { "<leader>rc", "<cmd>Review commits<cr>", desc = "Review commits" },
     { "<leader>rb", "<cmd>Review branch<cr>", desc = "Review branch" },
-    { "<leader>rn", ":Review note<cr>", mode = { "n", "v" }, desc = "Review note" },
+    { "<leader>rn", ":Review note<cr>", mode = { "n", "v" }, desc = "Review: note here" },
+    { "<leader>re", "<cmd>Review edit<cr>", desc = "Review: edit comment" },
+    { "<leader>rd", "<cmd>Review delete<cr>", desc = "Review: delete comment" },
+    { "<leader>rx", "<cmd>Review export<cr>", desc = "Review: export" },
   },
   opts = {},
 }
 ```
+
+A few notes on that snippet:
+
+- The `keys` all sit under `<leader>r` so they show up together in which-key. Don't map `<leader>r` itself to anything, or Neovim waits for the timeout before running it.
+- `<leader>rn` uses `:` on purpose. In visual mode that becomes `:'<,'>Review note`, so the same key does single-line and range notes.
+- `event = "VeryLazy"` loads the plugin shortly after startup. That's what makes notes you left earlier appear when you open a file. With `cmd = { "Review" }` instead, nothing renders until you've run `:Review` once in the session, which is fine if you don't use notes.
+- Inside the diff view the single-key mappings (`i`, `d`, `e`, `C`, `q`, ...) come from the plugin. See [Keybindings](#keybindings-in-diff-view).
 
 ## Usage
 
@@ -100,11 +110,7 @@ A `~` before the line number means the old (left) side of the diff.
 
 *Notes left while reading files, with no diff open. They show up on the review and in the export like any other comment.*
 
-You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repo opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer while you browse, show up on the diff if you open a review later, and go out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. There are no default keymaps outside the diff, so add something like:
-
-```lua
-vim.keymap.set({ "n", "v" }, "<leader>rn", ":Review note<CR>", { desc = "Review note" })
-```
+You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repo opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer while you browse, show up on the diff if you open a review later, and go out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. There are no default keymaps outside the diff. The [installation](#installation) snippet maps `<leader>rn`, `<leader>re` and `<leader>rd` for these.
 
 Notes follow your edits. They're attached to extmarks while the buffer is open, and the stored line numbers get updated when you write the file, so adding lines above a note keeps it on the same code.
 
