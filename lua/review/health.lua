@@ -62,11 +62,11 @@ end
 function M.check()
   start("review.nvim")
 
-  if vim.fn.has("nvim-0.9") == 1 then
+  if vim.fn.has("nvim-0.10") == 1 then
     local v = vim.version()
     ok(string.format("Neovim %d.%d.%d", v.major, v.minor, v.patch))
   else
-    err("Neovim >= 0.9 is required")
+    err("Neovim >= 0.10 is required")
   end
 
   if vim.fn.executable("git") == 1 then
