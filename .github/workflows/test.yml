@@ -8,7 +8,12 @@ on:
 
 jobs:
   test:
+    name: test (nvim ${{ matrix.neovim }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim: [stable, nightly]
     steps:
       - uses: actions/checkout@v7
 
@@ -16,7 +21,7 @@ jobs:
         uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: stable
+          version: ${{ matrix.neovim }}
 
       - name: Install test deps (mini.test, codediff.nvim, nui.nvim)
         run: make deps
