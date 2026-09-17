@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.10.0...v1.10.1) (2026-09-17)
+
+
+### Documentation
+
+* Fix the lazy.nvim example ([bd1e376](https://github.com/georgeguimaraes/review.nvim/commit/bd1e376479d6c9d00fafaffa810d4f21649f9c83))
+* version = "*" in the lazy.nvim example ([daa19cf](https://github.com/georgeguimaraes/review.nvim/commit/daa19cfbd1bc2c7b1c20adef057fc281799e21a0))
+
+
+### Continuous Integration
+
+* Let release-please create the tag and GitHub release ([228b335](https://github.com/georgeguimaraes/review.nvim/commit/228b335e9ba257c234f17b8ca971e22a155e552c))
+
 ## [1.10.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.2...v1.10.0) (2026-09-17)
 
 
