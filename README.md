@@ -67,6 +67,26 @@ Using lazy.nvim:
 :Review toggle       " Toggle readonly/edit mode
 ```
 
+## Export targets
+
+Every export (`C`, `:Review export`, and `q` on close) copies the markdown to the clipboard and calls `export.on_export` if you set one. That's the hook for anything that isn't the clipboard: a tmux pane, a file an agent watches, Avante, whatever you use.
+
+```lua
+require("review").setup({
+  export = {
+    clipboard = true,
+    on_export = function(markdown, comments)
+      -- send it to the pane on the right
+      vim.fn.system({ "tmux", "send-keys", "-t", "right", markdown, "Enter" })
+    end,
+  },
+})
+```
+
+`comments` is the list of comment tables (`file`, `line`, `line_end`, `side`, `type`, `text`), in case you'd rather build your own format.
+
+Run `:checkhealth review` to confirm codediff.nvim, nui.nvim, git and the clipboard are all in place. It also checks the codediff API surface review.nvim depends on, so it catches version mismatches between the two plugins.
+
 ## Workflow
 
 Open a review with `:Review` to see your staged and unstaged changes in a side-by-side diff, or `:Review commits` if you want to pick specific commits to review. For a whole branch, `:Review branch` lists branches to review with the one you're on first. Reviewing the current branch diffs the merge base with your working tree, so uncommitted work is included; reviewing any other branch (say `origin/feature-x`) diffs commits without checking it out. The base is `main` or `master` unless you set `branch = { base = "develop" }` or pass it as the second argument. Comments are stored per base/branch pair and survive new commits. The diff opens in a new tab with a file panel on the left.

@@ -1,6 +1,7 @@
 local M = {}
 
 local store = require("review.store")
+local config = require("review.config")
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = "review.nvim" })
@@ -47,17 +48,55 @@ function M.generate_markdown()
   return table.concat(lines, "\n")
 end
 
-function M.to_clipboard()
-  local markdown = M.generate_markdown()
+---Hand the export to its targets: the clipboard (export.clipboard) and the
+---export.on_export callback. Every export path (C, :Review export, q) ends here.
+---@return string|nil markdown nil when there is nothing to export
+---@return number count
+function M.deliver()
   local count = store.count()
-
   if count == 0 then
+    return nil, 0
+  end
+
+  local markdown = M.generate_markdown()
+  local cfg = config.get().export or {}
+
+  if cfg.clipboard ~= false then
+    vim.fn.setreg("+", markdown)
+    vim.fn.setreg("*", markdown)
+  end
+
+  if type(cfg.on_export) == "function" then
+    local ok, err = pcall(cfg.on_export, markdown, store.get_all())
+    if not ok then
+      notify("export.on_export failed: " .. tostring(err), vim.log.levels.ERROR)
+    end
+  end
+
+  return markdown, count
+end
+
+---@param count number
+---@return string
+function M.delivered_message(count)
+  local cfg = config.get().export or {}
+  local targets = {}
+  if cfg.clipboard ~= false then
+    table.insert(targets, "clipboard")
+  end
+  if type(cfg.on_export) == "function" then
+    table.insert(targets, "on_export")
+  end
+  local where = #targets > 0 and (" to " .. table.concat(targets, " and ")) or ""
+  return string.format("Exported %d comment(s)%s", count, where)
+end
+
+function M.to_clipboard()
+  local markdown, count = M.deliver()
+  if not markdown then
     notify("No comments to export", vim.log.levels.WARN)
     return
   end
-
-  vim.fn.setreg("+", markdown)
-  vim.fn.setreg("*", markdown)
 
   -- Show content in a bottom split
   local buf = vim.api.nvim_create_buf(false, true)
@@ -83,7 +122,7 @@ function M.to_clipboard()
     end
   end, { buffer = buf, nowait = true })
 
-  notify(string.format("Exported %d comment(s) to clipboard", count), vim.log.levels.INFO)
+  notify(M.delivered_message(count), vim.log.levels.INFO)
 end
 
 function M.preview()

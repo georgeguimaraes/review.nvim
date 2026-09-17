@@ -214,10 +214,30 @@ T["switches files with Tab and deletes with confirmation"] = function()
   expect.reference_screenshot(screenshot(), nil, SCREENSHOT_OPTS)
 end
 
+T["checkhealth passes with codediff and nui installed"] = function()
+  child.cmd("checkhealth review")
+  local report = table.concat(child.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  expect_match(report, "OK codediff.nvim %d")
+  expect_match(report, "OK codediff.ui.lifecycle API")
+  expect_match(report, "OK codediff explorer accessor")
+  expect_match(report, "OK codediff.ui.explorer navigation API")
+  expect_match(report, "OK nui.nvim")
+  expect_match(report, "OK git repository")
+  eq(report:find("ERROR", 1, true), nil)
+end
+
 T["exports to clipboard and closes"] = function()
   open_review()
   add_comment(5, 2, "error() here swallows the status code, return it too")
   add_comment(12, 3, "nice, pcall around decode is the right call")
+
+  -- on_export runs for C and again for q
+  child.lua([[
+    _G.EXPORTS = {}
+    require("review.config").get().export.on_export = function(markdown, comments)
+      table.insert(_G.EXPORTS, { markdown = markdown, count = #comments })
+    end
+  ]])
 
   child.type_keys("C")
   wait_for([[vim.bo.filetype == "markdown"]], "export preview split")
@@ -231,9 +251,14 @@ T["exports to clipboard and closes"] = function()
   wait_for(READY, "focus back on modified pane")
   child.fn.setreg("+", "")
 
+  eq(child.lua_get([[#_G.EXPORTS]]), 1)
+  eq(child.lua_get([[_G.EXPORTS[1].count]]), 2)
+  eq(child.lua_get([[_G.EXPORTS[1].markdown]]), exported)
+
   child.type_keys("q") -- close the review, which exports again
   wait_for([[vim.fn.tabpagenr("$") == 1]], "review tab closed")
   expect_match(child.fn.getreg("+"), "%*%*%[ISSUE%]%*%* `api%.lua:5`")
+  eq(child.lua_get([[#_G.EXPORTS]]), 2)
   eq(child.lua_get([[require("review.hooks").get_current_tabpage()]]), vim.NIL)
 end
 

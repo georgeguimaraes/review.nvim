@@ -4,7 +4,12 @@ local M = {}
 ---@field comment_types table<string, CommentType>
 ---@field keymaps ReviewKeymaps
 ---@field branch { base: string|nil }
+---@field export ReviewExportConfig
 ---@field codediff ReviewCodediffConfig
+
+---@class ReviewExportConfig
+---@field clipboard boolean copy the markdown to the + and * registers
+---@field on_export nil|fun(markdown: string, comments: Comment[]) called on every export
 
 ---@class CommentType
 ---@field key string
@@ -91,6 +96,10 @@ M.defaults = {
   branch = {
     base = nil, -- base for :Review branch; nil picks main or master
   },
+  export = {
+    clipboard = true, -- copy exported markdown to the clipboard
+    on_export = nil, -- function(markdown, comments) for tmux, an agent, a file...
+  },
   codediff = {
     readonly = true,
   },
@@ -101,7 +110,9 @@ M.config = vim.deepcopy(M.defaults)
 
 ---@param opts? ReviewConfig
 function M.setup(opts)
-  M.config = vim.tbl_deep_extend("force", M.defaults, opts or {})
+  -- deepcopy: tbl_deep_extend assigns nested tables by reference when only
+  -- one side has them, so edits to config.get() would leak into the defaults
+  M.config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
 end
 
 ---@return ReviewConfig

@@ -251,13 +251,10 @@ function M.open_commits(rev1, rev2)
 end
 
 function M.close()
-  -- Export comments to clipboard before closing
-  local count = store.count()
-  if count > 0 then
-    local markdown = export.generate_markdown()
-    vim.fn.setreg("+", markdown)
-    vim.fn.setreg("*", markdown)
-    vim.notify(string.format("Exported %d comment(s) to clipboard", count), vim.log.levels.INFO, { title = "review.nvim" })
+  -- Export comments before closing
+  local markdown, count = export.deliver()
+  if markdown then
+    vim.notify(export.delivered_message(count), vim.log.levels.INFO, { title = "review.nvim" })
   end
 
   -- Close the tab
