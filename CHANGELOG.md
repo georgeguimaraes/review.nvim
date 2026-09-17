@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.10.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.2...v1.10.0) (2026-09-17)
+
+
+### Features
+
+* Add export.on_export callback and :checkhealth review ([1c9586e](https://github.com/georgeguimaraes/review.nvim/commit/1c9586e8ee6ab8c5f0536fb5395a4d7916af89ab))
+* Add Review branch with a branch picker ([8061612](https://github.com/georgeguimaraes/review.nvim/commit/8061612e8470a79de69b69b13bcb0edd26b8e0c4))
+* Keep note positions in step with edits ([d8c80d0](https://github.com/georgeguimaraes/review.nvim/commit/d8c80d0500c1812a7ffa89baaa076b7b9ce479f7))
+* Notes on any file with :Review note ([1b43daa](https://github.com/georgeguimaraes/review.nvim/commit/1b43daa411a10a881e803870fc4522cdf5dc51cd))
+* One comment store per repo, archived and cleared on close ([c8ec75e](https://github.com/georgeguimaraes/review.nvim/commit/c8ec75e482d5708a3ef598f77cfc11437397f801))
+
+
+### Documentation
+
+* Add a gif of notes outside the diff, captions for both ([27bda4f](https://github.com/georgeguimaraes/review.nvim/commit/27bda4f68a1dc0ed75ce609c0efcdcaaa9a783b5))
+* Bring the README up to date ([ef08a68](https://github.com/georgeguimaraes/review.nvim/commit/ef08a682759a27b7f4ca223448cfe6ea75b8d466))
+
+
+### Tests
+
+* Don't depend on how :checkhealth renders ([977b489](https://github.com/georgeguimaraes/review.nvim/commit/977b48906948399706334709b563f2d1e4301f6b))
+* Wait for normal mode after popup submits ([1948500](https://github.com/georgeguimaraes/review.nvim/commit/19485003119b9396466b2f0acbb6ebdf843c4299))
+
+
+### Continuous Integration
+
+* Test against nvim stable and nightly ([73e84a5](https://github.com/georgeguimaraes/review.nvim/commit/73e84a51e2628cf88df380434f42c4c4d877197a))
+
 ## [1.9.2](https://github.com/georgeguimaraes/review.nvim/compare/v1.9.1...v1.9.2) (2026-09-16)
 
 
