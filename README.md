@@ -37,7 +37,7 @@ Using lazy.nvim:
 ```lua
 {
   "georgeguimaraes/review.nvim",
-  version = "v*",
+  version = "*",
   dependencies = {
     "esmuellert/codediff.nvim",
     "MunifTanjim/nui.nvim",
