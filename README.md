@@ -6,6 +6,8 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 
 ![review.nvim demo: adding typed comments in a codediff view and exporting them as markdown](assets/demo.gif)
 
+*Reviewing a diff: an issue, a praise and a range suggestion, then `C` to export them as markdown.*
+
 ## Features
 
 - Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
@@ -93,6 +95,10 @@ For a multi-line comment, select the range visually and press `i`. For a comment
 A `~` before the line number means the old (left) side of the diff.
 
 ## Notes on any file
+
+![review.nvim notes demo: leaving notes on files with no diff open, then seeing them in the review and the export](assets/notes.gif)
+
+*Notes left while reading files, with no diff open. They show up on the review and in the export like any other comment.*
 
 You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repo opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer while you browse, show up on the diff if you open a review later, and go out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. There are no default keymaps outside the diff, so add something like:
 
