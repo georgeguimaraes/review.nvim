@@ -216,6 +216,8 @@ end
 
 T["checkhealth passes with codediff and nui installed"] = function()
   child.cmd("checkhealth review")
+  -- rendering is async on newer Neovim
+  wait_for([[#vim.api.nvim_buf_get_lines(0, 0, -1, false) > 5]], "checkhealth report")
   local report = table.concat(child.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
   expect_match(report, "OK codediff.nvim %d")
   expect_match(report, "OK codediff.ui.lifecycle API")
