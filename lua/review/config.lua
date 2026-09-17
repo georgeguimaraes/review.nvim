@@ -10,6 +10,7 @@ local M = {}
 ---@class ReviewExportConfig
 ---@field clipboard boolean copy the markdown to the + and * registers
 ---@field on_export nil|fun(markdown: string, comments: Comment[]) called on every export
+---@field clear_on_close boolean archive and clear comments when the review closes (q)
 
 ---@class CommentType
 ---@field key string
@@ -99,6 +100,7 @@ M.defaults = {
   export = {
     clipboard = true, -- copy exported markdown to the clipboard
     on_export = nil, -- function(markdown, comments) for tmux, an agent, a file...
+    clear_on_close = true, -- q exports, archives and clears; C only exports
   },
   codediff = {
     readonly = true,

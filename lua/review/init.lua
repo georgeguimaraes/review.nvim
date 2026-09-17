@@ -102,7 +102,25 @@ function M._check_codediff_session()
   keymaps.setup_keymaps(tabpage)
 end
 
----@param opts { args: string[], storage: string[]|nil } :CodeDiff arguments and the revision pair comments are stored under
+---Comments made on another branch are still in the per-repo store; say so
+---once so they don't end up in an export by surprise.
+local function notify_other_branch_comments()
+  local counts = store.count_from_other_branches(storage.git_branch())
+  local parts = {}
+  for branch, count in pairs(counts) do
+    table.insert(parts, string.format("%d from %s", count, branch))
+  end
+  if #parts > 0 then
+    table.sort(parts)
+    vim.notify(
+      "Comments made on other branches: " .. table.concat(parts, ", ") .. ". :Review clear archives and drops them.",
+      vim.log.levels.WARN,
+      { title = "review.nvim" }
+    )
+  end
+end
+
+---@param opts { args: string[] } :CodeDiff arguments
 local function open_codediff(opts)
   local ok, _ = pcall(require, "codediff")
   if not ok then
@@ -110,16 +128,8 @@ local function open_codediff(opts)
     return
   end
 
-  -- Scope storage to the revision pair for commit and branch reviews
-  if opts.storage then
-    storage.set_revisions(opts.storage[1], opts.storage[2])
-  else
-    storage.clear_revisions()
-  end
-
-  -- Load persisted comments (reset first so we load from the new storage path)
-  store.reset()
   store.load()
+  notify_other_branch_comments()
 
   vim.cmd({ cmd = "CodeDiff", args = opts.args })
 
@@ -146,7 +156,7 @@ end
 
 local function open_codediff_with_revisions(rev1, rev2)
   if rev1 and rev2 then
-    open_codediff({ args = { rev1, rev2 }, storage = { rev1, rev2 } })
+    open_codediff({ args = { rev1, rev2 } })
   else
     open_codediff({ args = {} })
   end
@@ -221,7 +231,7 @@ function M.open_branch(target, base)
       return
     end
     local arg = is_current_branch(chosen) and (base .. "...") or (base .. "..." .. chosen)
-    open_codediff({ args = { arg }, storage = { base, chosen } })
+    open_codediff({ args = { arg } })
   end
 
   if target then
@@ -250,17 +260,23 @@ function M.open_commits(rev1, rev2)
   end)
 end
 
+---Close the review: export, then (by default) archive and clear the comments
+---so the next review starts empty. C and :Review export never clear.
 function M.close()
-  -- Export comments before closing
   local markdown, count = export.deliver()
-  if markdown then
-    vim.notify(export.delivered_message(count), vim.log.levels.INFO, { title = "review.nvim" })
-  end
+  local message = markdown and export.delivered_message(count) or nil
 
-  -- Close the tab
   vim.cmd("tabclose")
   hooks.on_session_closed()
-  storage.clear_revisions()
+
+  if markdown and config.get().export.clear_on_close ~= false then
+    store.archive_and_clear()
+    require("review.marks").clear_all()
+    message = message .. ", archived and cleared"
+  end
+  if message then
+    vim.notify(message, vim.log.levels.INFO, { title = "review.nvim" })
+  end
 end
 
 function M.export()
@@ -272,9 +288,9 @@ function M.preview()
 end
 
 function M.clear()
-  store.clear()
+  local archived = store.archive_and_clear()
   require("review.marks").clear_all()
-  vim.notify("All comments cleared", vim.log.levels.INFO, { title = "review.nvim" })
+  vim.notify(archived and "All comments archived and cleared" or "No comments to clear", vim.log.levels.INFO, { title = "review.nvim" })
 end
 
 function M.count()

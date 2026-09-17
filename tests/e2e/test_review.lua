@@ -255,11 +255,21 @@ T["exports to clipboard and closes"] = function()
   eq(child.lua_get([[_G.EXPORTS[1].count]]), 2)
   eq(child.lua_get([[_G.EXPORTS[1].markdown]]), exported)
 
-  child.type_keys("q") -- close the review, which exports again
+  eq(child.lua_get([[require("review.store").count()]]), 2) -- C exports, never clears
+
+  child.type_keys("q") -- close the review: export again, then archive and clear
   wait_for([[vim.fn.tabpagenr("$") == 1]], "review tab closed")
   expect_match(child.fn.getreg("+"), "%*%*%[ISSUE%]%*%* `api%.lua:5`")
   eq(child.lua_get([[#_G.EXPORTS]]), 2)
   eq(child.lua_get([[require("review.hooks").get_current_tabpage()]]), vim.NIL)
+  eq(child.lua_get([[require("review.store").count()]]), 0)
+  -- this repo's live file is gone and exactly one archive of it exists
+  -- (other cases in this file have their own repos, hence their own files)
+  local live = child.lua_get([[require("review.storage").get_storage_path()]])
+  eq(vim.fn.filereadable(live), 0)
+  local archived = vim.fn.glob(sandbox .. "/data/nvim/review/archive/" .. vim.fn.fnamemodify(live, ":t:r") .. "-*.json", false, true)
+  eq(#archived, 1)
+  expect_match(table.concat(vim.fn.readfile(archived[1]), "\n"), "pcall around decode", true)
 end
 
 return T

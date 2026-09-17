@@ -11,6 +11,7 @@ local storage = require("review.storage")
 ---@field type "note"|"suggestion"|"issue"|"praise"
 ---@field text string
 ---@field created_at number
+---@field branch? string branch checked out when the comment was made
 
 ---@type table<string, Comment[]>
 M.comments = {}
@@ -72,6 +73,7 @@ function M.add(file, line, type, text, line_end, side)
     type = type,
     text = text,
     created_at = os.time(),
+    branch = storage.git_branch(),
   }
 
   table.insert(M.comments[file], comment)
@@ -225,10 +227,32 @@ function M.count()
   return count
 end
 
-function M.clear()
+---Comments made on other branches than `branch`, grouped by branch name.
+---@param branch string|nil
+---@return table<string, number> counts by branch
+function M.count_from_other_branches(branch)
+  local counts = {}
+  for _, comments in pairs(M.comments) do
+    for _, comment in ipairs(comments) do
+      if comment.branch and branch and comment.branch ~= branch then
+        counts[comment.branch] = (counts[comment.branch] or 0) + 1
+      end
+    end
+  end
+  return counts
+end
+
+---Archive the persisted file and start over. Nothing is deleted outright.
+---@return string|nil archived file path
+function M.archive_and_clear()
+  local archived = storage.archive()
   M.reset()
   storage.clear()
-  storage.clear_revisions()
+  return archived
+end
+
+function M.clear()
+  M.archive_and_clear()
 end
 
 return M

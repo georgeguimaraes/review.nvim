@@ -3,16 +3,6 @@ local M = {}
 local data_dir = vim.fn.stdpath("data") .. "/review"
 
 ---@type {rev1: string, rev2: string}|nil
-local current_revisions = nil
-
-function M.set_revisions(rev1, rev2)
-  current_revisions = (rev1 and rev2) and { rev1 = rev1, rev2 = rev2 } or nil
-end
-
-function M.clear_revisions()
-  current_revisions = nil
-end
-
 ---@return string|nil
 local function get_git_root()
   local handle = io.popen("git rev-parse --show-toplevel 2>/dev/null")
@@ -27,7 +17,7 @@ local function get_git_root()
 end
 
 ---@return string|nil
-local function get_git_branch()
+function M.git_branch()
   local handle = io.popen("git rev-parse --abbrev-ref HEAD 2>/dev/null")
   if handle then
     local result = handle:read("*a")
@@ -49,43 +39,64 @@ local function hash(str)
   return string.format("%x", h)
 end
 
----Filename-safe form of a revision: hashes are shortened, branch names are
----kept readable with unsafe characters (like the / in feature/x) replaced.
----@param rev string
----@return string
-local function short_rev(rev)
-  rev = rev:gsub("%^$", "")
-  if rev:match("^%x+$") and #rev > 8 then
-    return rev:sub(1, 8)
-  end
-  return (rev:gsub("[^%w%-_.]", "_"))
-end
-
----@return string|nil
-function M.get_storage_path()
+---@return string|nil project hash for the current repo, nil outside git
+local function project_hash()
   local git_root = get_git_root()
   if not git_root then
     return nil
   end
-
-  local project_hash = hash(git_root)
-
-  -- Ensure directory exists (pcall to suppress error if exists)
   pcall(vim.fn.mkdir, data_dir, "p")
+  return hash(git_root)
+end
 
-  if current_revisions then
-    local r1 = short_rev(current_revisions.rev1)
-    local r2 = short_rev(current_revisions.rev2)
-    return string.format("%s/%s-%s_%s.json", data_dir, project_hash, r1, r2)
-  end
-
-  local branch = get_git_branch()
-  if not branch then
+---One file per repository: comments and notes live together until the
+---review is closed (or :Review clear), which archives and clears them.
+---@return string|nil
+function M.get_storage_path()
+  local h = project_hash()
+  if not h then
     return nil
   end
+  return string.format("%s/%s.json", data_dir, h)
+end
 
+---Where releases before the per-repo store kept the current branch's comments.
+---@return string|nil
+function M.legacy_storage_path()
+  local h = project_hash()
+  local branch = M.git_branch()
+  if not h or not branch then
+    return nil
+  end
   local safe_branch = branch:gsub("[^%w%-_]", "_")
-  return string.format("%s/%s-%s.json", data_dir, project_hash, safe_branch)
+  return string.format("%s/%s-%s.json", data_dir, h, safe_branch)
+end
+
+---@return string
+function M.archive_dir()
+  return data_dir .. "/archive"
+end
+
+---Move the live file into the archive so a close or clear never loses text.
+---@return string|nil archived file path, nil when there was nothing to archive
+function M.archive()
+  local path = M.get_storage_path()
+  if not path or vim.fn.filereadable(path) == 0 then
+    return nil
+  end
+  local dir = M.archive_dir()
+  pcall(vim.fn.mkdir, dir, "p")
+  local h = vim.fn.fnamemodify(path, ":t:r")
+  local target = string.format("%s/%s-%s.json", dir, h, os.date("%Y%m%d-%H%M%S"))
+  local n = 1
+  while vim.fn.filereadable(target) == 1 do
+    target = string.format("%s/%s-%s-%d.json", dir, h, os.date("%Y%m%d-%H%M%S"), n)
+    n = n + 1
+  end
+  if os.rename(path, target) then
+    return target
+  end
+  return nil
 end
 
 ---@param comments table
@@ -103,47 +114,67 @@ function M.save(comments)
   end
 end
 
-local EXPIRY_SECONDS = 7 * 24 * 60 * 60
-local cleanup_done = false
+-- Archived exports are kept for 30 days. The live file never expires:
+-- notes are meant to accumulate while you browse.
+local ARCHIVE_EXPIRY_SECONDS = 30 * 24 * 60 * 60
+local cleanup_scheduled = false
 
 function M.cleanup_expired()
-  if cleanup_done then
+  local now = os.time()
+  for _, filepath in ipairs(vim.fn.glob(M.archive_dir() .. "/*.json", false, true)) do
+    local mtime = vim.fn.getftime(filepath)
+    if mtime > 0 and (now - mtime) > ARCHIVE_EXPIRY_SECONDS then
+      os.remove(filepath)
+    end
+  end
+end
+
+local function schedule_cleanup()
+  if cleanup_scheduled then
     return
   end
-  cleanup_done = true
+  cleanup_scheduled = true
+  vim.defer_fn(M.cleanup_expired, 0)
+end
 
-  vim.defer_fn(function()
-    local files = vim.fn.glob(data_dir .. "/*.json", false, true)
-    local now = os.time()
-    for _, filepath in ipairs(files) do
-      local mtime = vim.fn.getftime(filepath)
-      if mtime > 0 and (now - mtime) > EXPIRY_SECONDS then
-        os.remove(filepath)
-      end
+---@param path string
+---@return table|nil
+local function read_json(path)
+  local file = io.open(path, "r")
+  if not file then
+    return nil
+  end
+  local content = file:read("*a")
+  file:close()
+  if content and content ~= "" then
+    local ok, data = pcall(vim.fn.json_decode, content)
+    if ok and type(data) == "table" then
+      return data
     end
-  end, 0)
+  end
+  return nil
 end
 
 ---@return table
 function M.load()
-  M.cleanup_expired()
+  schedule_cleanup()
 
   local path = M.get_storage_path()
   if not path then
     return {}
   end
 
-  local file = io.open(path, "r")
-  if not file then
-    return {}
+  local data = read_json(path)
+  if data then
+    return data
   end
 
-  local content = file:read("*a")
-  file:close()
-
-  if content and content ~= "" then
-    local ok, data = pcall(vim.fn.json_decode, content)
-    if ok and data then
+  -- First run after the per-repo store: adopt the current branch's old file
+  local legacy = M.legacy_storage_path()
+  if legacy and vim.fn.filereadable(legacy) == 1 then
+    data = read_json(legacy)
+    if data then
+      M.save(data)
       return data
     end
   end

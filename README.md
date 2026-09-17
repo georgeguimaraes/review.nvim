@@ -11,8 +11,8 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
 - Multi-line comment support with box-style virtual text display
 - Comments displayed as signs, line highlights, and virtual text
-- Comments persist per branch (stored in Neovim's XDG data directory: `~/.local/share/nvim/review/`)
-- Auto-export comments to clipboard when closing
+- One comment store per repository, persisted across restarts
+- Closing the review exports to the clipboard, then archives and clears the comments
 - Export format optimized for AI conversations
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
 - Commit picker modal to select specific commits to review
@@ -58,7 +58,7 @@ Using lazy.nvim:
 :Review commits REV1 REV2  " Review specific revision range (skips picker)
 :Review branch       " Pick a branch to review against main/master (current branch first)
 :Review branch TARGET [BASE]  " Review TARGET (e.g. origin/feature) against BASE (skips picker)
-:Review close        " Close and export comments to clipboard
+:Review close        " Close: export to clipboard, then archive and clear comments
 :Review export       " Export comments to clipboard
 :Review preview      " Preview exported markdown in split
 :Review sidekick     " Send comments to sidekick.nvim
@@ -104,7 +104,17 @@ When you're done, press `q` to close the review. This automatically copies all y
 2. **[SUGGESTION]** `src/utils.ts:~10` - The old implementation was cleaner
 ```
 
-Lines prefixed with `~` refer to the old (left) side of the diff. Comments persist per branch, so you can close Neovim and come back to the same review later. Sessions auto-expire after 7 days.
+Lines prefixed with `~` refer to the old (left) side of the diff.
+
+## How comments are stored
+
+There is one comment store per repository, kept under `~/.local/share/nvim/review/` (Neovim's data dir). Comments survive restarts, so you can leave a review half done and come back to it.
+
+Closing the review with `q` (or `:Review close`) is what ends a round: it exports the markdown, moves the store to `archive/` with a timestamp, and starts you over with an empty store. `C` and `:Review export` only export, so exporting midway to check the output is free. Nothing is deleted by a keystroke: `:Review clear` archives too, and archives are kept for 30 days.
+
+Because the store is per repository rather than per branch, comments you made on another branch are still there when you open a review on a different one. review.nvim notifies you when that happens ("Comments made on other branches: 2 from feature-x") so they don't end up in an export by surprise. `:Review clear` drops them.
+
+Set `export = { clear_on_close = false }` to keep comments after closing, which is how versions before 1.10 behaved. On first run after upgrading, the old per-branch file for the current branch is adopted automatically.
 
 ## Keybindings (in diff view)
 
@@ -124,7 +134,7 @@ Lines prefixed with `~` refer to the old (left) side of the diff. Comments persi
 | `C` | Export to clipboard and show preview |
 | `S` | Send comments to sidekick.nvim |
 | `<C-r>` | Clear all comments |
-| `q` | Close and export comments to clipboard |
+| `q` | Close: export, then archive and clear comments |
 | `t` | Toggle side-by-side/inline layout |
 | `g?` | Show codediff help |
 

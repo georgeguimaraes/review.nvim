@@ -1,58 +1,83 @@
 local H = dofile("tests/helpers.lua")
-local eq, neq, expect_truthy = H.eq, H.neq, H.expect_truthy
+local eq, neq, expect_match, expect_truthy = H.eq, H.neq, H.expect_match, H.expect_truthy
 
 local storage = require("review.storage")
 
+local function reset_disk()
+  storage.clear()
+  vim.fn.delete(storage.archive_dir(), "rf")
+  local legacy = storage.legacy_storage_path()
+  if legacy then
+    vim.fn.delete(legacy)
+  end
+end
+
 local T = MiniTest.new_set({
   hooks = {
-    post_case = function()
-      storage.clear_revisions()
-    end,
+    pre_case = reset_disk,
+    post_once = reset_disk,
   },
 })
 
 T["get_storage_path"] = MiniTest.new_set()
 
-T["get_storage_path"]["returns branch-scoped path when no revisions set"] = function()
-  storage.clear_revisions()
+T["get_storage_path"]["is one file per repository, not per branch"] = function()
   local path = storage.get_storage_path()
   neq(path, nil)
-  eq(path:match("_"), nil)
-  expect_truthy(path:match("%.json$"))
+  expect_match(path, "/review/%x+%.json$")
+  eq(path:find(storage.git_branch(), 1, true), nil)
 end
 
-T["get_storage_path"]["returns revision-scoped path when revisions are set"] = function()
-  storage.set_revisions("abc12345def^", "fef98765abc")
-  local path = storage.get_storage_path()
-  neq(path, nil)
-  expect_truthy(path:match("abc12345_fef98765%.json$"))
+T["get_storage_path"]["legacy path carried the branch name"] = function()
+  local legacy = storage.legacy_storage_path()
+  local safe_branch = storage.git_branch():gsub("[^%w%-_]", "_")
+  expect_match(legacy, "/review/%x+%-" .. vim.pesc(safe_branch) .. "%.json$")
 end
 
-T["get_storage_path"]["strips trailing ^ from revision in filename"] = function()
-  storage.set_revisions("abc12345^", "def67890")
-  local path = storage.get_storage_path()
-  expect_truthy(path:match("abc12345_def67890%.json$"))
+T["archive"] = MiniTest.new_set()
+
+T["archive"]["moves the live file into archive/ and keeps its contents"] = function()
+  storage.save({ ["a.lua"] = { { file = "a.lua", line = 1, type = "note", text = "keep me" } } })
+  local archived = storage.archive()
+  neq(archived, nil)
+  expect_match(archived, "/review/archive/%x+%-%d%d%d%d%d%d%d%d%-%d%d%d%d%d%d%.json$")
+  eq(vim.fn.filereadable(storage.get_storage_path()), 0)
+  expect_match(table.concat(vim.fn.readfile(archived), "\n"), "keep me", true)
 end
 
-T["get_storage_path"]["truncates long revisions to 8 chars"] = function()
-  storage.set_revisions("abcdef1234567890^", "1234567890abcdef")
-  local path = storage.get_storage_path()
-  expect_truthy(path:match("abcdef12_12345678%.json$"))
+T["archive"]["returns nil when there is nothing to archive"] = function()
+  eq(storage.archive(), nil)
+  eq(vim.fn.isdirectory(storage.archive_dir()), 0)
 end
 
-T["get_storage_path"]["keeps branch names readable and filename-safe"] = function()
-  storage.set_revisions("feature/login-form", "main")
-  local path = storage.get_storage_path()
-  expect_truthy(path:match("feature_login%-form_main%.json$"))
+T["load"] = MiniTest.new_set()
+
+T["load"]["adopts the old per-branch file on first run"] = function()
+  vim.fn.writefile({ '{"b.lua":[{"file":"b.lua","line":2,"type":"issue","text":"from before"}]}' }, storage.legacy_storage_path())
+  local data = storage.load()
+  eq(data["b.lua"][1].text, "from before")
+  eq(vim.fn.filereadable(storage.get_storage_path()), 1)
 end
 
-T["get_storage_path"]["returns branch path after clearing revisions"] = function()
-  storage.set_revisions("abc12345^", "def67890")
-  storage.clear_revisions()
-  local path = storage.get_storage_path()
-  neq(path, nil)
-  -- Should not contain revision separator
-  eq(path:match("abc12345"), nil)
+T["load"]["returns an empty table when nothing is stored"] = function()
+  eq(storage.load(), {})
+end
+
+T["cleanup_expired"] = MiniTest.new_set()
+
+T["cleanup_expired"]["drops old archives and never the live file"] = function()
+  storage.save({})
+  local live = storage.get_storage_path()
+  vim.fn.mkdir(storage.archive_dir(), "p")
+  local old = storage.archive_dir() .. "/old.json"
+  local fresh = storage.archive_dir() .. "/fresh.json"
+  vim.fn.writefile({ "{}" }, old)
+  vim.fn.writefile({ "{}" }, fresh)
+  vim.fn.system({ "touch", "-t", "202001010000", old, live })
+  storage.cleanup_expired()
+  eq(vim.fn.filereadable(old), 0)
+  eq(vim.fn.filereadable(fresh), 1)
+  eq(vim.fn.filereadable(live), 1)
 end
 
 return T

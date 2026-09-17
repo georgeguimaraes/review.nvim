@@ -108,30 +108,48 @@ T["reviews another branch without checking it out"] = function()
   eq(vim.fn.readfile(repo .. "/api.lua"), API_BASE)
 end
 
-T["comments are stored per base and branch"] = function()
+-- Record what :CodeDiff was asked to diff.
+local RECORD_CODEDIFF_ARGS = [[
+  local orig = vim.api.nvim_cmd
+  vim.api.nvim_cmd = function(cmd, opts)
+    if cmd.cmd == "CodeDiff" then _G.CODEDIFF_ARGS = cmd.args end
+    return orig(cmd, opts or {})
+  end
+]]
+
+T["diffs the merge base of the configured base and the working tree"] = function()
+  child.lua(RECORD_CODEDIFF_ARGS)
   child.cmd("Review branch feature")
   E.wait_ready("api.lua")
-  child.type_keys("4G", "i")
-  E.wait_for(E.IN_POPUP, "popup")
-  child.type_keys("branch comment", "<C-s>")
-  E.wait_for([[require("review.store").count() == 1]], "comment stored")
-  local files = vim.fn.glob(sandbox .. "/data/nvim/review/*.json", false, true)
-  eq(#files, 1)
-  expect_match(files[1], "%-main_feature%.json$")
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "main..." })
 end
 
 T["honours branch.base from config"] = function()
   E.git(repo, "branch", "-q", "develop", "main~1")
   child.lua([[require("review.config").setup({ branch = { base = "develop" } })]])
+  child.lua(RECORD_CODEDIFF_ARGS)
+  child.cmd("Review branch feature")
+  E.wait_ready("api.lua")
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "develop..." })
+end
+
+T["warns about comments made on another branch"] = function()
   child.cmd("Review branch feature")
   E.wait_ready("api.lua")
   child.type_keys("4G", "i")
   E.wait_for(E.IN_POPUP, "popup")
-  child.type_keys("x", "<C-s>")
+  child.type_keys("made on feature", "<C-s>")
   E.wait_for([[require("review.store").count() == 1]], "comment stored")
-  files = vim.fn.glob(sandbox .. "/data/nvim/review/*.json", false, true)
-  eq(#files, 1)
-  expect_match(files[1], "%-develop_feature%.json$")
+  child.lua([[require("review.config").get().export.clear_on_close = false]])
+  child.type_keys("q")
+  E.wait_for([[vim.fn.tabpagenr("$") == 1]], "review closed")
+  eq(child.lua_get([[require("review.store").count()]]), 1)
+
+  E.git(repo, "checkout", "-q", "main")
+  vim.fn.writefile({ "-- edited on main", "return 'only on main'" }, repo .. "/main_only.lua") -- something to review on main
+  child.cmd("Review")
+  E.wait_ready("main_only.lua")
+  expect_match(child.lua_get([[vim.fn.execute("messages")]]), "1 from feature", true)
 end
 
 return T

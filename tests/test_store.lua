@@ -188,4 +188,33 @@ T["side awareness"]["comments on different sides at same line don't conflict"] =
   neq(old.text, new.text)
 end
 
+T["branches"] = MiniTest.new_set()
+
+T["branches"]["records the checked-out branch on each comment"] = function()
+  local comment = store.add("file.lua", 3, "note", "text")
+  eq(comment.branch, require("review.storage").git_branch())
+end
+
+T["branches"]["counts comments made on other branches"] = function()
+  local mine = store.add("file.lua", 3, "note", "here")
+  local other = store.add("file.lua", 5, "issue", "elsewhere")
+  local third = store.add("other.lua", 1, "praise", "elsewhere too")
+  other.branch = "feature/x"
+  third.branch = "feature/x"
+  eq(store.count_from_other_branches(mine.branch), { ["feature/x"] = 2 })
+  eq(store.count_from_other_branches(nil), {})
+end
+
+T["archive_and_clear"] = MiniTest.new_set()
+
+T["archive_and_clear"]["empties the store and archives what was there"] = function()
+  local storage = require("review.storage")
+  store.add("file.lua", 3, "note", "gone soon")
+  local archived = store.archive_and_clear()
+  neq(archived, nil)
+  eq(store.count(), 0)
+  eq(vim.fn.filereadable(storage.get_storage_path()), 0)
+  vim.fn.delete(storage.archive_dir(), "rf")
+end
+
 return T
