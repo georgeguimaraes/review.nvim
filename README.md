@@ -16,6 +16,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Export format optimized for AI conversations
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
 - Commit picker modal to select specific commits to review
+- Branch picker to review a branch against its base (merge-base aware, no checkout needed)
 - Built on top of codediff.nvim
 
 ## Requirements
@@ -55,6 +56,8 @@ Using lazy.nvim:
 :Review commits      " Select commits to review (picker modal)
 :Review commits SHA  " Review a single commit (diffs SHA^ against SHA)
 :Review commits REV1 REV2  " Review specific revision range (skips picker)
+:Review branch       " Pick a branch to review against main/master (current branch first)
+:Review branch TARGET [BASE]  " Review TARGET (e.g. origin/feature) against BASE (skips picker)
 :Review close        " Close and export comments to clipboard
 :Review export       " Export comments to clipboard
 :Review preview      " Preview exported markdown in split
@@ -66,7 +69,7 @@ Using lazy.nvim:
 
 ## Workflow
 
-Open a review with `:Review` to see your staged and unstaged changes in a side-by-side diff, or `:Review commits` if you want to pick specific commits to review. The diff opens in a new tab with a file panel on the left.
+Open a review with `:Review` to see your staged and unstaged changes in a side-by-side diff, or `:Review commits` if you want to pick specific commits to review. For a whole branch, `:Review branch` lists branches to review with the one you're on first. Reviewing the current branch diffs the merge base with your working tree, so uncommitted work is included; reviewing any other branch (say `origin/feature-x`) diffs commits without checking it out. The base is `main` or `master` unless you set `branch = { base = "develop" }` or pass it as the second argument. Comments are stored per base/branch pair and survive new commits. The diff opens in a new tab with a file panel on the left.
 
 Navigate between files with `<Tab>` and `<S-Tab>`. Toggle the file panel with `f`. Press `t` to toggle between side-by-side and inline layout. Switch between the old (left) and new (right) panes with `<C-w>h` and `<C-w>l`. When you spot something worth commenting on, press `i` on the line and pick a comment type from the menu (note, suggestion, issue, praise). The comment renders inline as a box below the line with a sign icon in the gutter.
 

@@ -49,10 +49,16 @@ local function hash(str)
   return string.format("%x", h)
 end
 
+---Filename-safe form of a revision: hashes are shortened, branch names are
+---kept readable with unsafe characters (like the / in feature/x) replaced.
 ---@param rev string
 ---@return string
 local function short_rev(rev)
-  return rev:gsub("%^$", ""):sub(1, 8)
+  rev = rev:gsub("%^$", "")
+  if rev:match("^%x+$") and #rev > 8 then
+    return rev:sub(1, 8)
+  end
+  return (rev:gsub("[^%w%-_.]", "_"))
 end
 
 ---@return string|nil

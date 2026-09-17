@@ -1,6 +1,9 @@
 local M = {}
 
-local Popup = require("nui.popup")
+-- nui is only needed for the popups; git listing works without it.
+local function popup_class()
+  return require("nui.popup")
+end
 
 ---@class Commit
 ---@field hash string
@@ -202,6 +205,136 @@ local function confirm_selection(callback)
   callback(oldest.hash .. "^", newest.hash)
 end
 
+---@class Branch
+---@field name string
+---@field date string relative commit date
+---@field subject string last commit subject
+---@field current boolean checked out right now
+
+---Branches that can be reviewed: the checked-out one first, then local and
+---remote branches by most recent commit. Remote HEAD pointers are skipped.
+---@param git_root string
+---@return Branch[]
+function M.list_branches(git_root)
+  local git = { "git", "-C", git_root }
+  local current = vim.fn.systemlist(vim.list_extend(vim.deepcopy(git), { "rev-parse", "--abbrev-ref", "HEAD" }))[1]
+  local result = vim.fn.systemlist(vim.list_extend(vim.deepcopy(git), {
+    "for-each-ref",
+    "--sort=-committerdate",
+    "--format=%(refname)|%(refname:short)|%(committerdate:relative)|%(subject)",
+    "refs/heads",
+    "refs/remotes",
+  }))
+  if vim.v.shell_error ~= 0 then
+    return {}
+  end
+
+  local head, others = {}, {}
+  for _, line in ipairs(result) do
+    local parts = vim.split(line, "|", { plain = true })
+    local ref, name = parts[1], parts[2]
+    -- refs/remotes/origin/HEAD shortens to just "origin"; skip it by full ref
+    if name and name ~= "" and not ref:match("/HEAD$") then
+      local entry = {
+        name = name,
+        date = parts[3] or "",
+        subject = table.concat({ unpack(parts, 4) }, "|"),
+        current = name == current,
+      }
+      table.insert(entry.current and head or others, entry)
+    end
+  end
+  return vim.list_extend(head, others)
+end
+
+---@type Branch[]
+local branches = {}
+
+local function render_branch_lines()
+  if not popup then
+    return
+  end
+  local buf = popup.bufnr
+  local lines, hls = {}, {}
+  for _, branch in ipairs(branches) do
+    local meta = string.format("(%s)", branch.date)
+    local name = branch.current and (branch.name .. " (current)") or branch.name
+    local line = string.format("%s  %s %s", name, branch.subject, meta)
+    if #line > 120 then
+      line = line:sub(1, 117) .. "..."
+    end
+    table.insert(lines, line)
+    table.insert(hls, {
+      { "ReviewPickerHash", 0, math.min(#name, #line) },
+      { "ReviewPickerMeta", math.max(0, #line - #meta), #line },
+    })
+  end
+
+  vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+
+  ns_id = vim.api.nvim_create_namespace("review_picker")
+  vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
+  for i, hl in ipairs(hls) do
+    apply_line_hl(buf, i - 1, hl)
+  end
+end
+
+---Pick a branch to review. The callback gets its name, or nil when cancelled.
+---@param callback fun(branch: string|nil)
+function M.open_branches(callback)
+  local git_root = get_git_root()
+  if not git_root then
+    vim.notify("Not in a git repository", vim.log.levels.ERROR, { title = "review.nvim" })
+    return
+  end
+
+  branches = M.list_branches(git_root)
+  if #branches == 0 then
+    vim.notify("No branches found", vim.log.levels.WARN, { title = "review.nvim" })
+    return
+  end
+
+  popup = popup_class()({
+    position = "50%",
+    size = {
+      width = math.min(120, vim.o.columns - 10),
+      height = math.min(20, #branches + 2, vim.o.lines - 10),
+    },
+    border = {
+      style = "rounded",
+      text = {
+        top = " Select branch to review ",
+        top_align = "center",
+        bottom = " <CR> select | q quit ",
+        bottom_align = "center",
+      },
+    },
+    buf_options = { modifiable = false, buftype = "nofile" },
+    win_options = { cursorline = true, cursorlineopt = "line" },
+  })
+
+  popup:mount()
+  render_branch_lines()
+  vim.api.nvim_set_current_win(popup.winid)
+  vim.api.nvim_win_set_cursor(popup.winid, { 1, 0 })
+
+  local function finish(choice)
+    close_picker()
+    branches = {}
+    callback(choice)
+  end
+
+  local map_opts = { noremap = true, nowait = true }
+  popup:map("n", "<CR>", function()
+    local branch = branches[vim.api.nvim_win_get_cursor(0)[1]]
+    finish(branch and branch.name or nil)
+  end, map_opts)
+  popup:map("n", "q", function() finish(nil) end, map_opts)
+  popup:map("n", "<Esc>", function() finish(nil) end, map_opts)
+end
+
 function M.open(callback)
   local git_root = get_git_root()
   if not git_root then
@@ -221,7 +354,7 @@ function M.open(callback)
   local width = math.min(120, vim.o.columns - 10)
   local height = math.min(20, #commits + 2, vim.o.lines - 10)
 
-  popup = Popup({
+  popup = popup_class()({
     position = "50%",
     size = {
       width = width,

@@ -40,6 +40,12 @@ T["get_storage_path"]["truncates long revisions to 8 chars"] = function()
   expect_truthy(path:match("abcdef12_12345678%.json$"))
 end
 
+T["get_storage_path"]["keeps branch names readable and filename-safe"] = function()
+  storage.set_revisions("feature/login-form", "main")
+  local path = storage.get_storage_path()
+  expect_truthy(path:match("feature_login%-form_main%.json$"))
+end
+
 T["get_storage_path"]["returns branch path after clearing revisions"] = function()
   storage.set_revisions("abc12345^", "def67890")
   storage.clear_revisions()

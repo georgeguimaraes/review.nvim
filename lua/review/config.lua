@@ -3,6 +3,7 @@ local M = {}
 ---@class ReviewConfig
 ---@field comment_types table<string, CommentType>
 ---@field keymaps ReviewKeymaps
+---@field branch { base: string|nil }
 ---@field codediff ReviewCodediffConfig
 
 ---@class CommentType
@@ -86,6 +87,9 @@ M.defaults = {
     popup_submit = "<C-s>",
     popup_cancel = "q",
     popup_cycle_type = "<Tab>",
+  },
+  branch = {
+    base = nil, -- base for :Review branch; nil picks main or master
   },
   codediff = {
     readonly = true,

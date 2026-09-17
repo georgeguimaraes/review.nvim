@@ -102,16 +102,17 @@ function M._check_codediff_session()
   keymaps.setup_keymaps(tabpage)
 end
 
-local function open_codediff_with_revisions(rev1, rev2)
+---@param opts { args: string[], storage: string[]|nil } :CodeDiff arguments and the revision pair comments are stored under
+local function open_codediff(opts)
   local ok, _ = pcall(require, "codediff")
   if not ok then
     vim.notify("codediff.nvim is required", vim.log.levels.ERROR, { title = "review.nvim" })
     return
   end
 
-  -- Scope storage to revision range for commit reviews
-  if rev1 and rev2 then
-    storage.set_revisions(rev1, rev2)
+  -- Scope storage to the revision pair for commit and branch reviews
+  if opts.storage then
+    storage.set_revisions(opts.storage[1], opts.storage[2])
   else
     storage.clear_revisions()
   end
@@ -120,12 +121,7 @@ local function open_codediff_with_revisions(rev1, rev2)
   store.reset()
   store.load()
 
-  -- Open CodeDiff
-  if rev1 and rev2 then
-    vim.cmd("CodeDiff " .. rev1 .. " " .. rev2)
-  else
-    vim.cmd("CodeDiff")
-  end
+  vim.cmd({ cmd = "CodeDiff", args = opts.args })
 
   -- Wait for CodeDiff to initialize, then set up our hooks
   local attempts = 0
@@ -146,6 +142,97 @@ local function open_codediff_with_revisions(rev1, rev2)
     end
   end
   vim.defer_fn(try_setup, 200)
+end
+
+local function open_codediff_with_revisions(rev1, rev2)
+  if rev1 and rev2 then
+    open_codediff({ args = { rev1, rev2 }, storage = { rev1, rev2 } })
+  else
+    open_codediff({ args = {} })
+  end
+end
+
+---@return string|nil branch name, nil when not on a branch
+local function current_branch()
+  local result = vim.fn.systemlist({ "git", "rev-parse", "--abbrev-ref", "HEAD" })
+  if vim.v.shell_error ~= 0 or not result[1] or result[1] == "HEAD" then
+    return nil
+  end
+  return result[1]
+end
+
+---True for the checked-out branch and for its upstream (origin/feature while
+---on feature), so both review the working tree rather than the pushed commit.
+---@param name string
+---@return boolean
+local function is_current_branch(name)
+  if name == current_branch() then
+    return true
+  end
+  local upstream = vim.fn.systemlist({ "git", "rev-parse", "--abbrev-ref", "@{upstream}" })[1]
+  return vim.v.shell_error == 0 and name == upstream
+end
+
+---@param ref string
+---@return boolean
+local function ref_exists(ref)
+  vim.fn.system({ "git", "rev-parse", "--verify", "--quiet", ref .. "^{commit}" })
+  return vim.v.shell_error == 0
+end
+
+---The branch a review is compared against: config.branch.base when set,
+---else main or master, whichever exists (origin/HEAD breaks a tie).
+---@return string|nil
+local function default_base()
+  local configured = config.get().branch.base
+  if configured and configured ~= "" then
+    return configured
+  end
+  local origin_head = vim.fn.systemlist({ "git", "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD" })[1]
+  if vim.v.shell_error == 0 and origin_head then
+    local name = origin_head:gsub("^origin/", "")
+    if ref_exists(name) then
+      return name
+    end
+  end
+  for _, name in ipairs({ "main", "master" }) do
+    if ref_exists(name) then
+      return name
+    end
+  end
+  return nil
+end
+
+---Review a branch against a base. With the checked-out branch as target the
+---diff is `base...` (merge base vs working tree, so uncommitted work counts);
+---with any other branch it's `base...target`, no checkout needed. Comments are
+---stored per (base, target) pair, so they survive new commits.
+---@param target? string branch to review; opens a picker when omitted
+---@param base? string defaults to config.branch.base, main or master
+function M.open_branch(target, base)
+  local function open(chosen)
+    base = base or default_base()
+    if not base then
+      vim.notify("No base branch found (set branch.base or create main/master)", vim.log.levels.WARN, { title = "review.nvim" })
+      return
+    end
+    if chosen == base then
+      vim.notify("Target and base are both " .. base, vim.log.levels.WARN, { title = "review.nvim" })
+      return
+    end
+    local arg = is_current_branch(chosen) and (base .. "...") or (base .. "..." .. chosen)
+    open_codediff({ args = { arg }, storage = { base, chosen } })
+  end
+
+  if target then
+    open(target)
+    return
+  end
+  require("review.picker").open_branches(function(chosen)
+    if chosen then
+      open(chosen)
+    end
+  end)
 end
 
 function M.open()

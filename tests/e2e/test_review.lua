@@ -4,17 +4,13 @@ local H = dofile("tests/helpers.lua")
 local eq, expect_match = H.eq, H.expect_match
 local expect = MiniTest.expect
 local child = MiniTest.new_child_neovim()
+local E = dofile("tests/e2e/helpers.lua")(child)
+local wait_for, READY, wait_ready = E.wait_for, E.READY, E.wait_ready
+local IN_POPUP, BACK_IN_DIFF = E.IN_POPUP, E.BACK_IN_DIFF
 
--- Keep review's persisted comments (stdpath("data")/review) out of the real
--- data dir. The child inherits this environment.
-local sandbox = vim.fn.tempname()
-vim.fn.mkdir(sandbox, "p")
-vim.env.XDG_DATA_HOME = sandbox .. "/data"
-vim.env.XDG_STATE_HOME = sandbox .. "/state"
-vim.env.XDG_CACHE_HOME = sandbox .. "/cache"
-vim.env.XDG_CONFIG_HOME = sandbox .. "/config"
+local sandbox = E.sandbox()
 
-local LINES, COLUMNS = 40, 160
+local LINES = 40 -- must match E.restart
 
 local SCREENSHOT_OPTS = {
   directory = "tests/e2e/screenshots",
@@ -88,47 +84,22 @@ local AFTER = {
   },
 }
 
-local function git(dir, ...)
-  local cmd = { "git", "-C", dir, "-c", "user.name=e2e", "-c", "user.email=e2e@test", "-c", "commit.gpgsign=false", ... }
-  local out = vim.fn.system(cmd)
-  if vim.v.shell_error ~= 0 then
-    error("git failed: " .. table.concat(cmd, " ") .. "\n" .. out)
-  end
-end
 
 -- A throwaway git repo with one commit and unstaged edits in two files.
 local function make_repo()
-  local dir = vim.fn.tempname()
-  vim.fn.mkdir(dir, "p")
-  dir = vim.uv.fs_realpath(dir) -- macOS: /var -> /private/var, must match git's root
+  local dir = E.tempdir()
   for name, lines in pairs(BEFORE) do
     vim.fn.writefile(lines, dir .. "/" .. name)
   end
-  git(dir, "init", "-q", "--initial-branch=main")
-  git(dir, "add", ".")
-  git(dir, "commit", "-q", "-m", "init")
+  E.git(dir, "init", "-q", "--initial-branch=main")
+  E.git(dir, "add", ".")
+  E.git(dir, "commit", "-q", "-m", "init")
   for name, lines in pairs(AFTER) do
     vim.fn.writefile(lines, dir .. "/" .. name)
   end
   return dir
 end
 
--- Poll a Lua predicate inside the child from the parent, so the child's event
--- loop keeps running and queued keys get dispatched.
-local function wait_for(pred, what, timeout_ms)
-  local deadline = vim.uv.hrtime() + (timeout_ms or 5000) * 1e6
-  while true do
-    if child.is_blocked() then
-      child.type_keys("<CR>") -- dismiss hit-enter prompts from vim.notify
-    elseif child.lua_get(pred) then
-      return
-    end
-    if vim.uv.hrtime() > deadline then
-      error("timed out waiting for " .. what)
-    end
-    vim.uv.sleep(50)
-  end
-end
 
 -- Emoji icons carry U+FE0F (variation selector); screenstring() reports the
 -- cell with or without it depending on redraw timing, so strip it.
@@ -146,24 +117,7 @@ local function current_file()
   return child.lua_get([[(require("review.hooks").get_cursor_position())]])
 end
 
--- Review's keymaps are installed and focus has landed on the modified pane.
-local READY = [[(function()
-  local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
-  if not ok then return false end
-  local _, mod_buf = lifecycle.get_buffers(vim.api.nvim_get_current_tabpage())
-  return mod_buf ~= nil
-    and vim.api.nvim_get_current_buf() == mod_buf
-    and vim.fn.maparg("i", "n") ~= ""
-    and not vim.bo.modifiable
-    and vim.api.nvim_buf_line_count(0) > 1
-end)()]]
 
--- Both conditions in one predicate: after a file switch the old buffer is
--- "ready" until codediff swaps in the new one, which then needs its own setup.
-local function wait_ready(file)
-  local pred = string.format([[%s and (require("review.hooks").get_cursor_position()) == %q]], READY, file)
-  wait_for(pred, "review keymaps on modified pane showing " .. file, 15000)
-end
 
 local function open_review()
   child.cmd("Review")
@@ -184,8 +138,6 @@ local function extmark_count()
   return child.lua_get([[#vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("review"), 0, -1, {})]])
 end
 
-local IN_POPUP = [[vim.api.nvim_win_get_config(0).relative ~= "" and vim.fn.mode() == "i"]]
-local BACK_IN_DIFF = [[vim.api.nvim_win_get_config(0).relative == "" and vim.fn.mode() == "n"]]
 
 -- Add a comment on `line` through the popup: `tabs` cycles the type
 -- (note -> suggestion -> issue -> praise), `<C-s>` submits.
@@ -206,10 +158,8 @@ local repo
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
-      child.restart({ "-u", "tests/e2e/child_init.lua", "-i", "NONE" })
-      child.o.lines, child.o.columns = LINES, COLUMNS
       repo = make_repo()
-      child.cmd("cd " .. vim.fn.fnameescape(repo))
+      E.restart(repo)
     end,
     post_case = function()
       if repo then
