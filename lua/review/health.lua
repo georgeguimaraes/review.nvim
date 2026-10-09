@@ -57,6 +57,13 @@ local function check_codediff()
   else
     ok("codediff.ui.explorer navigation API")
   end
+
+  local explorer_tree_missing = missing_functions("codediff.ui.explorer.tree", { "get_all_files" })
+  if #nav_missing > 0 then
+    err("codediff.ui.explorer.tree is missing: " .. table.concat(explorer_tree_missing, ", "), { "File navigation from comments list won't work. Update codediff.nvim" })
+  else
+    ok("codediff.ui.explorer.tree navigation API")
+  end
 end
 
 function M.check()

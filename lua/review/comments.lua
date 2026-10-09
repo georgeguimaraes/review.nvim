@@ -251,16 +251,23 @@ function M.list()
     -- Try to navigate to the file in codediff explorer
     local tabpage = hooks.get_current_tabpage()
     local explorer = tabpage and hooks.get_explorer(tabpage)
+    local found_file = false
     if explorer then
-      local explorer_mod = require("codediff.ui.explorer")
+      local explorer_tree_mod = require("codediff.ui.explorer.tree")
       -- Find and select the file in explorer
       -- This is a best-effort navigation
-      for i, node in ipairs(explorer.tree:get_nodes()) do
-        if node.path == comment.file then
-          explorer_mod.select_node(explorer, node)
+      for _, node in ipairs(explorer_tree_mod.get_all_files(explorer.tree)) do
+        if node.data.path == comment.file then
+          found_file = true
+          explorer.on_file_select(node.data)
           break
         end
       end
+    end
+
+    if not found_file then
+        vim.notify("No matching explorer item found to navigate for: ".. comment.file, vim.log.levels.WARN)
+        return
     end
 
     -- Jump to line after a short delay (line 1 for file-level comments)
