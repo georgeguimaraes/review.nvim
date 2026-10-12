@@ -281,9 +281,16 @@ local function render_branch_lines()
   end
 end
 
----Pick a branch to review. The callback gets its name, or nil when cancelled.
+---@class BranchPickerOptions
+---@field title? string popup title without surrounding padding
+---@field exclude? string branch name to leave out of the choices
+---@field preferred? string branch name to highlight initially
+
+---Pick a branch. The callback gets its name, or nil when cancelled.
 ---@param callback fun(branch: string|nil)
-function M.open_branches(callback)
+---@param opts? BranchPickerOptions
+function M.open_branches(callback, opts)
+  opts = opts or {}
   local git_root = get_git_root()
   if not git_root then
     vim.notify("Not in a git repository", vim.log.levels.ERROR, { title = "review.nvim" })
@@ -291,9 +298,23 @@ function M.open_branches(callback)
   end
 
   branches = M.list_branches(git_root)
+  if opts.exclude then
+    branches = vim.tbl_filter(function(branch) return branch.name ~= opts.exclude end, branches)
+  end
   if #branches == 0 then
-    vim.notify("No branches found", vim.log.levels.WARN, { title = "review.nvim" })
+    local message = opts.exclude and "No branches available to use as a base" or "No branches found"
+    vim.notify(message, vim.log.levels.WARN, { title = "review.nvim" })
     return
+  end
+
+  local initial_row = 1
+  if opts.preferred then
+    for i, branch in ipairs(branches) do
+      if branch.name == opts.preferred then
+        initial_row = i
+        break
+      end
+    end
   end
 
   popup = popup_class()({
@@ -305,7 +326,7 @@ function M.open_branches(callback)
     border = {
       style = "rounded",
       text = {
-        top = " Select branch to review ",
+        top = " " .. (opts.title or "Select branch to review") .. " ",
         top_align = "center",
         bottom = " <CR> select | q quit ",
         bottom_align = "center",
@@ -318,7 +339,7 @@ function M.open_branches(callback)
   popup:mount()
   render_branch_lines()
   vim.api.nvim_set_current_win(popup.winid)
-  vim.api.nvim_win_set_cursor(popup.winid, { 1, 0 })
+  vim.api.nvim_win_set_cursor(popup.winid, { initial_row, 0 })
 
   local function finish(choice)
     close_picker()

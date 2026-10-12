@@ -3,7 +3,7 @@ local M = {}
 ---@class ReviewConfig
 ---@field comment_types table<string, CommentType>
 ---@field keymaps ReviewKeymaps
----@field branch { base: string|nil }
+---@field branch { base: string|nil, pick_base: boolean }
 ---@field export ReviewExportConfig
 ---@field codediff ReviewCodediffConfig
 
@@ -95,7 +95,8 @@ M.defaults = {
     popup_cycle_type = "<Tab>",
   },
   branch = {
-    base = nil, -- base for :Review branch; nil picks main or master
+    base = nil, -- automatic base for :Review branch; nil detects origin/HEAD, main, or master
+    pick_base = false, -- open a second branch picker for the base
   },
   export = {
     clipboard = true, -- copy exported markdown to the clipboard

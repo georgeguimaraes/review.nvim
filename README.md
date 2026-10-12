@@ -18,7 +18,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - Export format optimized for AI conversations, with a callback for tmux, agents or files
 - Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
 - Commit picker modal to select specific commits to review
-- Branch picker to review a branch against its base (merge-base aware, no checkout needed)
+- Branch pickers to review a branch against an automatic or interactively selected base (merge-base aware, no checkout needed)
 - Notes on any file while you browse, exported alongside review comments
 - Built on top of codediff.nvim
 
@@ -71,7 +71,7 @@ A few notes on that snippet:
 :Review commits      " Select commits to review (picker modal)
 :Review commits SHA  " Review a single commit (diffs SHA^ against SHA)
 :Review commits REV1 REV2  " Review specific revision range (skips picker)
-:Review branch       " Pick a branch to review against main/master (current branch first)
+:Review branch       " Pick a target branch; optionally pick its base via branch.pick_base
 :Review branch TARGET [BASE]  " Review TARGET (e.g. origin/feature) against BASE (skips picker)
 :Review note         " Comment on the current line of any file (:'<,'>Review note for a range)
 :Review edit         " Edit the comment at the cursor
@@ -87,7 +87,7 @@ A few notes on that snippet:
 
 ## Workflow
 
-`:Review` opens your staged and unstaged changes in a side by side diff, in a new tab with a file panel on the left. `:Review commits` lets you pick specific commits instead. `:Review branch` lists branches to review, with the one you're on first. Reviewing the branch you're on diffs the merge base against your working tree, so uncommitted work counts. Reviewing any other branch (say `origin/feature-x`) diffs commits and doesn't check anything out. The base is `main` or `master` unless you set `branch = { base = "develop" }` or pass it as the second argument.
+`:Review` opens your staged and unstaged changes in a side by side diff, in a new tab with a file panel on the left. `:Review commits` lets you pick specific commits instead. `:Review branch` lists branches to review, with the one you're on first. Reviewing the branch you're on diffs the merge base against your working tree, so uncommitted work counts. Reviewing any other branch (say `origin/feature-x`) diffs commits and doesn't check anything out. The base is detected from `origin/HEAD`, `main`, or `master` unless you set `branch.base` or pass it as the second argument. Set `branch.pick_base = true` to pick the base interactively after picking the target; explicit `TARGET [BASE]` forms always skip the pickers.
 
 `<Tab>` and `<S-Tab>` move between files, `f` toggles the file panel, `t` switches between side by side and inline. `<C-w>h` and `<C-w>l` move between the old (left) and new (right) panes. When you see something worth a comment, press `i` on the line and pick a type from the menu (note, suggestion, issue, praise). The comment renders as a box below the line with an icon in the gutter.
 
@@ -201,6 +201,7 @@ All keymaps can be set to `false` to disable them.
 |--------|---------|---------|
 | `codediff.readonly` | `true` | Diff panes are read-only, with the single-key mappings above |
 | `branch.base` | `nil` | Base for `:Review branch`; `nil` picks `origin/HEAD`, then `main` or `master` |
+| `branch.pick_base` | `false` | After picking a target, open a second picker for its base |
 | `export.clipboard` | `true` | Copy exported markdown to the `+` and `*` registers |
 | `export.on_export` | `nil` | `function(markdown, comments)` run on every export |
 | `export.clear_on_close` | `true` | `q` archives and clears comments after exporting |
@@ -229,6 +230,7 @@ require("review").setup({
   },
   branch = {
     base = "main",
+    pick_base = false,
   },
   export = {
     clipboard = true,
