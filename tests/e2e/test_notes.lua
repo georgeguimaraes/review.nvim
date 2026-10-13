@@ -147,6 +147,17 @@ T[":Review list switches the review to the comment's file and line"] = function(
   E.wait_for([[vim.fn.line(".") == 3]], "cursor on line 3")
 end
 
+T[":Review list puts old-side comments in the original pane"] = function()
+  child.lua([[require("review.store").add("api.lua", 4, "issue", "old line", nil, "old")]])
+  child.cmd("Review")
+  E.wait_ready("api.lua")
+  pick_first_from_list()
+  E.wait_for([[(function()
+    local original_win = require("codediff.ui.lifecycle").get_windows(vim.api.nvim_get_current_tabpage())
+    return vim.api.nvim_get_current_win() == original_win and vim.fn.line(".") == 4
+  end)()]], "original pane at line 4")
+end
+
 T["refuses files outside the repository"] = function()
   local outside = vim.fn.tempname() .. ".lua"
   vim.fn.writefile({ "elsewhere" }, outside)
