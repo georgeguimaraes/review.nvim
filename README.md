@@ -1,26 +1,26 @@
 # review.nvim 🧐
 
-Code review annotations for codediff.nvim, optimized for AI feedback loops.
+review.nvim adds code review comments to codediff.nvim. It exports the comments as markdown for an AI agent.
 
-Inspired by [tuicr](https://github.com/agavra/tuicr).
+The idea comes from [tuicr](https://github.com/agavra/tuicr).
 
 ![review.nvim demo: adding typed comments in a codediff view and exporting them as markdown](assets/demo.gif)
 
-*Reviewing a diff: an issue, a praise and a range suggestion, then `C` to export them as markdown.*
+*A review of a diff: an issue, a praise and a range suggestion. Then `C` exports them as markdown.*
 
 ## Features
 
-- Add comments to specific lines in diff view (Note, Suggestion, Issue, Praise)
-- Multi-line comment support with box-style virtual text display
-- Comments displayed as signs, line highlights, and virtual text
-- One comment store per repository, persisted across restarts
-- Closing the review exports to the clipboard, then archives and clears the comments
-- Export format optimized for AI conversations, with a callback for tmux, agents or files
-- Send comments directly to [sidekick.nvim](https://github.com/folke/sidekick.nvim) for AI chat
-- Commit picker modal to select specific commits to review
-- Branch pickers to review a branch against an automatic or interactively selected base (merge-base aware, no checkout needed)
-- Notes on any file while you browse, exported alongside review comments
-- Built on top of codediff.nvim
+- Comments on lines of a diff, with four types: Note, Suggestion, Issue and Praise
+- Comments on a range of lines
+- Signs, line highlights and boxes of virtual text for each comment
+- One comment store for each repository, kept across restarts
+- An export to the clipboard when you close a review, then an archive of the comments
+- Markdown export for AI agents, with a callback for tmux, agents or files
+- A command to send the comments to [sidekick.nvim](https://github.com/folke/sidekick.nvim)
+- A commit picker to review specific commits
+- A branch picker to review a branch against its base. The base is automatic, or you pick it. review.nvim uses the merge base and does not check out the branch.
+- Notes on any file, exported with the review comments
+- The diff view of codediff.nvim
 
 ## Requirements
 
@@ -30,9 +30,9 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 
 ## Installation
 
-The plugin follows [semantic versioning](https://semver.org/). Pin to a tag if you don't want surprises.
+The plugin follows [semantic versioning](https://semver.org/). To get only compatible updates, set `version` to a release.
 
-Using lazy.nvim:
+With lazy.nvim:
 
 ```lua
 {
@@ -56,49 +56,55 @@ Using lazy.nvim:
 }
 ```
 
-A few notes on that snippet:
+Some notes on this snippet:
 
-- The `keys` all sit under `<leader>r` so they show up together in which-key. Don't map `<leader>r` itself to anything, or Neovim waits for the timeout before running it.
-- `<leader>rn` uses `:` on purpose. In visual mode that becomes `:'<,'>Review note`, so the same key does single-line and range notes.
-- `event = "VeryLazy"` loads the plugin shortly after startup. That's what makes notes you left earlier appear when you open a file. With `cmd = { "Review" }` instead, nothing renders until you've run `:Review` once in the session, which is fine if you don't use notes.
-- Inside the diff view the single-key mappings (`i`, `d`, `e`, `C`, `q`, ...) come from the plugin. See [Keybindings](#keybindings-in-diff-view).
+- All the `keys` start with `<leader>r`, so which-key shows them together. Do not map `<leader>r` itself. If you do, Neovim waits for the timeout before it runs the mapping.
+- `<leader>rn` uses `:` and not `<cmd>`. In visual mode, `:` becomes `:'<,'>Review note`, so the same key adds single-line notes and range notes.
+- `event = "VeryLazy"` loads the plugin shortly after startup. Because of this, notes from earlier sessions show when you open a file. With `cmd = { "Review" }`, notes do not show until you run `:Review` in the session. Use `cmd` only if you do not use notes.
+- In the diff view, the plugin sets the single-key mappings (`i`, `d`, `e`, `C`, `q` and others). See [Keybindings](#keybindings-in-diff-view).
 
 ## Usage
 
 ```vim
 :Review              " Open codediff with comment keymaps (default)
-:Review open         " Same as above
-:Review commits      " Select commits to review (picker modal)
+:Review open         " Same as :Review
+:Review commits      " Pick commits to review
 :Review commits SHA  " Review a single commit (diffs SHA^ against SHA)
-:Review commits REV1 REV2  " Review specific revision range (skips picker)
-:Review branch       " Pick a target branch; optionally pick its base via branch.pick_base
-:Review branch TARGET [BASE]  " Review TARGET (e.g. origin/feature) against BASE (skips picker)
-:Review note         " Comment on the current line of any file (:'<,'>Review note for a range)
+:Review commits REV1 REV2  " Review a revision range (no picker)
+:Review branch       " Pick a branch to review (and its base, with branch.pick_base)
+:Review branch TARGET [BASE]  " Review TARGET, such as origin/feature, against BASE (no picker)
+:Review note         " Add a note on the current line of any file (:'<,'>Review note for a range)
 :Review edit         " Edit the comment at the cursor
 :Review delete       " Delete the comment at the cursor
-:Review close        " Close: export to clipboard, then archive and clear comments
-:Review export       " Export comments to clipboard
-:Review preview      " Preview exported markdown in split
-:Review sidekick     " Send comments to sidekick.nvim
+:Review close        " Export, archive and clear the comments, then close
+:Review export       " Export the comments to the clipboard
+:Review preview      " Show the export in a split
+:Review sidekick     " Send the comments to sidekick.nvim
 :Review list         " List all comments
 :Review clear        " Archive and clear all comments
-:Review toggle       " Toggle readonly/edit mode
+:Review toggle       " Toggle readonly and edit mode
 ```
 
 ## Workflow
 
-`:Review` opens your staged and unstaged changes in a side by side diff, in a new tab with a file panel on the left. `:Review commits` lets you pick specific commits instead. `:Review branch` lists branches to review, with the one you're on first. Reviewing the branch you're on diffs the merge base against your working tree, so uncommitted work counts. Reviewing any other branch (say `origin/feature-x`) diffs commits and doesn't check anything out. The base is detected from `origin/HEAD`, `main`, or `master` unless you set `branch.base` or pass it as the second argument. Set `branch.pick_base = true` to pick the base interactively after picking the target; explicit `TARGET [BASE]` forms always skip the pickers.
+`:Review` opens your staged and unstaged changes in a side-by-side diff. The diff opens in a new tab, with a file panel on the left. `:Review commits` lets you pick commits instead. `:Review branch` shows a list of branches, with your current branch first.
 
-`<Tab>` and `<S-Tab>` move between files, `f` toggles the file panel, `t` switches between side by side and inline. `<C-w>h` and `<C-w>l` move between the old (left) and new (right) panes. When you see something worth a comment, press `i` on the line and pick a type from the menu (note, suggestion, issue, praise). The comment box is a markdown buffer, so your `FileType markdown` settings, such as spell check, apply there. The comment renders as a box below the line with an icon in the gutter.
+When you review your current branch, review.nvim compares the merge base with your working tree. Thus, the diff includes your uncommitted changes. When you review a different branch, such as `origin/feature-x`, review.nvim compares commits and does not check out the branch.
 
-For a multi-line comment, select the range visually and press `i`. For a comment about the whole file, press `F`. Comments on the left side only show on the left, and the same goes for the right.
+The base is `origin/HEAD`, `main` or `master`. To use a different base, set `branch.base` or give the base as the second argument. To pick the base from a list after the target, set `branch.pick_base = true`. `:Review branch TARGET [BASE]` never opens a picker.
 
-`]n` and `[n` jump between comments, `e` edits one, `d` deletes. `c` lists every comment across files so you can jump to one.
+`<Tab>` and `<S-Tab>` move between files. `f` shows or hides the file panel. `t` switches between the side-by-side layout and the inline layout. `<C-w>h` and `<C-w>l` move between the old (left) pane and the new (right) pane.
 
-`C` copies the comments to the clipboard as markdown and shows a preview. `q` does the export one more time, archives the comments and closes, so the next review starts empty. Paste the markdown into Claude Code, sidekick.nvim (`S`), or whatever you're talking to. It looks like this:
+To add a comment, press `i` on the line and pick a type from the menu: note, suggestion, issue or praise. The comment box is a markdown buffer, so your `FileType markdown` settings, such as spell check, apply there. The comment shows as a box below the line, with an icon in the sign column.
+
+For a comment on many lines, select the lines in visual mode and press `i`. For a comment on the whole file, press `F`. A comment on the left side shows only on the left side. A comment on the right side shows only on the right side.
+
+`]n` and `[n` go to the next comment and the previous comment. `e` edits the comment at the cursor, and `d` deletes it. `c` shows a list of all the comments in all the files. Pick a comment to go to it.
+
+`C` copies the comments to the clipboard as markdown and shows a preview. `q` exports one more time, archives the comments and closes the review. The next review then starts empty. Paste the markdown into Claude Code, sidekick.nvim (`S`) or a different tool. The export looks like this:
 
 ```
-1. **[ISSUE]** `src/api.ts:23` - This endpoint doesn't handle errors
+1. **[ISSUE]** `src/api.ts:23` - This endpoint does not handle errors
 2. **[SUGGESTION]** `src/utils.ts:~10` - The old implementation was cleaner
 ```
 
@@ -108,104 +114,114 @@ A `~` before the line number means the old (left) side of the diff.
 
 ![review.nvim notes demo: leaving notes on files with no diff open, then seeing them in the review and the export](assets/notes.gif)
 
-*Notes left while reading files, with no diff open. They show up on the review and in the export like any other comment.*
+*Notes added while reading files, with no diff open. The notes show in the review and in the export like all other comments.*
 
-You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repo opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer while you browse, show up on the diff if you open a review later, and go out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. `:Review list` also works with no diff open: pick a note and it opens the file at that line. There are no default keymaps outside the diff. The [installation](#installation) snippet maps `<leader>rn`, `<leader>re` and `<leader>rd` for these.
+You do not need a diff to add a comment. Run `:Review note` on a line of a file in the repository to open the comment popup. For a visual selection, use `:'<,'>Review note`. Notes show in the buffer while you read. They also show in the diff when you open a review, and they go into the same export as the other comments.
 
-Notes follow your edits. They're attached to extmarks while the buffer is open, and the stored line numbers get updated when you write the file, so adding lines above a note keeps it on the same code.
+`:Review edit` and `:Review delete` work at the cursor in all buffers. `:Review list` also works with no diff open: pick a note to open its file at that line. Outside the diff, there are no default keymaps. The [installation](#installation) snippet maps `<leader>rn`, `<leader>re` and `<leader>rd` for these commands.
 
-Files are resolved against the git repo of Neovim's working directory. A note on a file from some other repo gets refused.
+Notes follow your edits. While the buffer is open, each note is attached to an extmark. When you write the file, review.nvim updates the stored line numbers. If you add lines above a note, the note stays on the same code.
+
+review.nvim finds files in the git repository of the Neovim working directory. It refuses a note on a file from a different repository.
 
 ## How comments are stored
 
-One comment store per repo, under `~/.local/share/nvim/review/` (Neovim's data dir). Comments survive restarts, so you can leave a review half done and pick it up later.
+review.nvim keeps one comment store for each repository, in `~/.local/share/nvim/review/` (the Neovim data directory). Comments stay after a restart, so you can stop a review and continue it later.
 
-`q` (or `:Review close`) ends a round: it exports, moves the store to `archive/` with a timestamp, and leaves you with an empty one. `C` and `:Review export` only export, so you can check the output midway. `:Review clear` archives too. Archives stick around for 30 days.
+`q` (or `:Review close`) ends a review round. It exports the comments, moves the store to `archive/` with a timestamp and starts an empty store. `C` and `:Review export` only export, so you can examine the output during the review. `:Review clear` also archives the store. Archived files stay for 30 days.
 
-Since the store is per repo and not per branch, comments you left on another branch are still there when you open a review somewhere else. review.nvim tells you when that happens ("Comments made on other branches: 2 from feature-x"), and `:Review clear` drops them.
+The store is for each repository, not for each branch. Thus, comments from a different branch stay in the store when you open a review on your branch. review.nvim tells you when this occurs ("Comments made on other branches: 2 from feature-x"). `:Review clear` removes these comments.
 
-`export = { clear_on_close = false }` keeps comments after closing, which is how versions before 1.10 worked. The first time you run this version, the old per-branch file for your current branch is picked up automatically.
+`export = { clear_on_close = false }` keeps the comments after you close the review. Versions before 1.10 worked like this. The first time you run this version, review.nvim moves the old per-branch file of your current branch into the new store.
 
 ## Keybindings (in diff view)
 
 **Readonly mode** (default):
 | Key | Action |
 |-----|--------|
-| `i` | Add comment (pick type from menu) |
-| `d` | Delete comment at cursor |
-| `e` | Edit comment at cursor |
+| `i` | Add a comment (pick the type from a menu) |
+| `F` | Add a comment on the whole file |
+| `d` | Delete the comment at the cursor |
+| `e` | Edit the comment at the cursor |
 | `c` | List all comments |
-| `f` | Toggle file panel visibility |
-| `R` | Toggle readonly/edit mode |
+| `f` | Show or hide the file panel |
+| `R` | Toggle readonly and edit mode |
 | `<Tab>` | Next file |
 | `<S-Tab>` | Previous file |
-| `]n` | Jump to next comment |
-| `[n` | Jump to previous comment |
-| `C` | Export to clipboard and show preview |
-| `S` | Send comments to sidekick.nvim |
+| `]n` | Next comment |
+| `[n` | Previous comment |
+| `C` | Export to the clipboard and show a preview |
+| `S` | Send the comments to sidekick.nvim |
 | `<C-r>` | Archive and clear all comments |
-| `q` | Close: export, then archive and clear comments |
-| `t` | Toggle side-by-side/inline layout |
-| `g?` | Show codediff help |
+| `q` | Close: export, then archive and clear the comments |
+| `t` | Toggle the side-by-side and inline layouts |
+| `?` | Show the review.nvim help |
+| `g?` | Show the codediff help |
 
-**Edit mode** (when `readonly = false`):
+**Edit mode** (when `codediff.readonly = false`):
 | Key | Action |
 |-----|--------|
-| `<localleader>cc` | Add comment (pick type from menu) |
-| `<localleader>cn/cs/ci/cp` | Add Note/Suggestion/Issue/Praise |
-| `<localleader>cd` | Delete comment |
-| `<localleader>ce` | Edit comment |
+| `<localleader>cc` | Add a comment (pick the type from a menu) |
+| `<localleader>cn/cs/ci/cp` | Add a Note, Suggestion, Issue or Praise |
+| `<localleader>cf` | Add a comment on the whole file |
+| `<localleader>cd` | Delete the comment |
+| `<localleader>ce` | Edit the comment |
 
-**Comment popup** (when adding/editing):
+**Comment popup** (when you add or edit a comment):
 | Key | Action |
 |-----|--------|
-| `Enter` | Insert newline (multi-line comments supported) |
-| `Ctrl+s` | Submit comment |
-| `Tab` | Cycle comment type |
+| `Enter` | Insert mode: add a new line. Normal mode: submit the comment |
+| `Ctrl+s` | Submit the comment |
+| `Tab` | Go to the next comment type |
 | `Esc` / `q` | Cancel (normal mode) |
 
 ## Configuration
 
-All keymaps can be set to `false` to disable them.
+To disable a keymap, set it to `false`.
 
 **Keymap options**
 | Option | Default | Action |
 |--------|---------|--------|
-| `add_comment` | `<localleader>cc` | Add comment, pick type (edit mode) |
-| `add_note` | `<localleader>cn` | Add note (edit mode) |
-| `add_suggestion` | `<localleader>cs` | Add suggestion (edit mode) |
-| `add_issue` | `<localleader>ci` | Add issue (edit mode) |
-| `add_praise` | `<localleader>cp` | Add praise (edit mode) |
-| `delete_comment` | `<localleader>cd` | Delete comment (edit mode) |
-| `edit_comment` | `<localleader>ce` | Edit comment (edit mode) |
+| `add_comment` | `<localleader>cc` | Add a comment, pick the type (edit mode) |
+| `add_note` | `<localleader>cn` | Add a note (edit mode) |
+| `add_suggestion` | `<localleader>cs` | Add a suggestion (edit mode) |
+| `add_issue` | `<localleader>ci` | Add an issue (edit mode) |
+| `add_praise` | `<localleader>cp` | Add a praise (edit mode) |
+| `add_file_comment` | `<localleader>cf` | Add a comment on the whole file (edit mode) |
+| `delete_comment` | `<localleader>cd` | Delete the comment (edit mode) |
+| `edit_comment` | `<localleader>ce` | Edit the comment (edit mode) |
 | `next_comment` | `]n` | Next comment |
 | `prev_comment` | `[n` | Previous comment |
 | `next_file` | `<Tab>` | Next file |
 | `prev_file` | `<S-Tab>` | Previous file |
-| `toggle_file_panel` | `f` | Toggle file panel |
+| `toggle_file_panel` | `f` | Show or hide the file panel |
 | `list_comments` | `c` | List all comments |
-| `export_clipboard` | `C` | Export to clipboard |
-| `send_sidekick` | `S` | Send comments to sidekick |
+| `export_clipboard` | `C` | Export to the clipboard |
+| `send_sidekick` | `S` | Send the comments to sidekick.nvim |
 | `clear_comments` | `<C-r>` | Archive and clear all comments |
 | `close` | `q` | Close: export, archive and clear |
-| `toggle_readonly` | `R` | Toggle readonly/edit mode |
-| `readonly_add` | `i` | Add comment (readonly mode) |
-| `readonly_delete` | `d` | Delete comment (readonly mode) |
-| `readonly_edit` | `e` | Edit comment (readonly mode) |
-| `popup_submit` | `<C-s>` | Submit comment (popup, insert & normal) |
-| `popup_cancel` | `q` | Cancel comment (popup, normal mode) |
-| `popup_cycle_type` | `<Tab>` | Cycle comment type (popup) |
+| `toggle_readonly` | `R` | Toggle readonly and edit mode |
+| `show_help` | `?` | Show the review.nvim help |
+| `readonly_add` | `i` | Add a comment (readonly mode) |
+| `readonly_add_file` | `F` | Add a comment on the whole file (readonly mode) |
+| `readonly_delete` | `d` | Delete the comment (readonly mode) |
+| `readonly_edit` | `e` | Edit the comment (readonly mode) |
+| `popup_submit` | `<C-s>` | Submit the comment (popup, insert mode and normal mode) |
+| `popup_cancel` | `q` | Cancel the comment (popup, normal mode) |
+| `popup_cycle_type` | `<Tab>` | Go to the next comment type (popup) |
 
 **Other options**
 | Option | Default | Meaning |
 |--------|---------|---------|
-| `codediff.readonly` | `true` | Diff panes are read-only, with the single-key mappings above |
-| `branch.base` | `nil` | Base for `:Review branch`; `nil` picks `origin/HEAD`, then `main` or `master` |
-| `branch.pick_base` | `false` | After picking a target, open a second picker for its base |
-| `export.header` | Current four-line preamble | Header block prepended to exported markdown |
-| `export.clipboard` | `true` | Copy exported markdown to the `+` and `*` registers |
-| `export.on_export` | `nil` | `function(markdown, comments)` run on every export |
-| `export.clear_on_close` | `true` | `q` archives and clears comments after exporting |
+| `codediff.readonly` | `true` | Make the diff panes read-only and use the single-key mappings above |
+| `branch.base` | `nil` | The base for `:Review branch`. With `nil`, use `origin/HEAD`, then `main` or `master` |
+| `branch.pick_base` | `false` | After you pick a target, open a second picker for its base |
+| `export.header` | The four-line header in [Export format](#export-format) | The text at the top of every export |
+| `export.clipboard` | `true` | Copy the export to the `+` and `*` registers |
+| `export.on_export` | `nil` | `function(markdown, comments)` that runs on every export |
+| `export.clear_on_close` | `true` | `q` archives and clears the comments after the export |
+
+An example setup:
 
 ```lua
 require("review").setup({
@@ -242,9 +258,9 @@ require("review").setup({
 })
 ```
 
-## Export Format
+## Export format
 
-Comments come out as markdown meant to be pasted into an AI chat:
+The export is markdown for an AI chat:
 
 ```markdown
 I reviewed your code and have the following comments. Please address them.
@@ -257,13 +273,13 @@ Lines prefixed with ~ refer to the old (left) side of the diff.
 3. **[PRAISE]** `src/hooks/useAuth.ts:12-18` - Clean implementation of the auth flow
 ```
 
-Lines prefixed with `~` (e.g. `:~45`) refer to the old (left) side of the diff. Range comments use `start-end` notation.
+A `~` before a line number (for example, `:~45`) refers to the old (left) side of the diff. Range comments use `start-end`.
 
-`export.header` replaces the first four lines. A custom header replaces the comment types and the `~` legend too, so explain them in your header if the reader needs them.
+`export.header` replaces the first four lines. A custom header also replaces the comment types and the `~` legend. If the reader needs them, explain them in your header.
 
 ## Export targets
 
-Every export (`C`, `:Review export`, and `q` on close) copies the markdown to the clipboard and calls `export.on_export` if you set one. That's where you hook up a tmux pane, a file an agent watches, Avante, or anything else.
+Each export (`C`, `:Review export` and `q`) copies the markdown to the clipboard. It also calls `export.on_export` if you set it. Use `on_export` to send the export to a tmux pane, a file that an agent reads, Avante or a different tool.
 
 ```lua
 require("review").setup({
@@ -277,27 +293,27 @@ require("review").setup({
 })
 ```
 
-`comments` is the list of comment tables (`file`, `line`, `line_end`, `side`, `type`, `text`) in case you want your own format.
+`comments` is the list of comment tables (`file`, `line`, `line_end`, `side`, `type`, `text`). Use it to make your own format.
 
 ## Health check
 
-`:checkhealth review` checks Neovim, git, codediff.nvim, nui.nvim and the clipboard. It also probes the codediff functions review.nvim calls, so a version mismatch between the two shows up there and not as an error on `:Review`.
+`:checkhealth review` checks Neovim, git, codediff.nvim, nui.nvim and the clipboard. It also checks that the codediff functions that review.nvim calls exist. Thus, a version mismatch between the two plugins shows in the health check, not as an error on `:Review`.
 
-## Running Tests
+## Tests
 
-Tests use [mini.test](https://github.com/nvim-mini/mini.test). Dependencies get cloned into `deps/` on first run.
+The tests use [mini.test](https://github.com/nvim-mini/mini.test). On the first run, `make` clones the dependencies into `deps/`.
 
 ```bash
 make test        # unit tests (tests/test_*.lua)
-make test-e2e    # end-to-end: drives :Review in a child Neovim with real codediff.nvim + nui.nvim
+make test-e2e    # end-to-end tests: run :Review in a child Neovim with codediff.nvim and nui.nvim
 make test-all    # both
 make test-file FILE=tests/test_store.lua
 ```
 
-The end-to-end tests compare screenshots against `tests/e2e/screenshots/`. If a UI change is on purpose, delete the affected screenshot and run again to regenerate it.
+The end-to-end tests compare screenshots with the files in `tests/e2e/screenshots/`. If you change the UI on purpose, delete the screenshot and run the tests again to make a new one.
 
 ## License
 
 Copyright 2025 George Guimarães
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+review.nvim uses the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
