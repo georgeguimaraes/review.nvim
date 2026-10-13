@@ -1,8 +1,8 @@
 # review.nvim 🧐
 
-review.nvim adds code review comments to codediff.nvim. It exports the comments as markdown for an AI agent.
+Code review annotations for codediff.nvim, optimized for AI feedback loops.
 
-The idea comes from [tuicr](https://github.com/agavra/tuicr).
+Inspired by [tuicr](https://github.com/agavra/tuicr).
 
 ![review.nvim demo: adding typed comments in a codediff view and exporting them as markdown](assets/demo.gif)
 
