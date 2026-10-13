@@ -14,7 +14,7 @@ Set Theme { "name": "Tokyo Night", "background": "#1a1b26", "foreground": "#c0ca
 Set TypingSpeed 40ms
 
 Hide
-Type "d=${TMPDIR:-/tmp}/review-reviewed-demo; assets/demo/make_reviewed_repo.sh $d && REVIEW_DEMO_DIR=$d XDG_DATA_HOME=$d-data nvim -u assets/demo/init.lua"
+Type "d=${TMPDIR:-/tmp}/review-reviewed-demo; rm -rf $d-data; assets/demo/make_reviewed_repo.sh $d && REVIEW_DEMO_DIR=$d XDG_DATA_HOME=$d-data nvim -u assets/demo/init.lua"
 Enter
 Sleep 1500ms
 Show
