@@ -89,7 +89,7 @@ A few notes on that snippet:
 
 `:Review` opens your staged and unstaged changes in a side by side diff, in a new tab with a file panel on the left. `:Review commits` lets you pick specific commits instead. `:Review branch` lists branches to review, with the one you're on first. Reviewing the branch you're on diffs the merge base against your working tree, so uncommitted work counts. Reviewing any other branch (say `origin/feature-x`) diffs commits and doesn't check anything out. The base is detected from `origin/HEAD`, `main`, or `master` unless you set `branch.base` or pass it as the second argument. Set `branch.pick_base = true` to pick the base interactively after picking the target; explicit `TARGET [BASE]` forms always skip the pickers.
 
-`<Tab>` and `<S-Tab>` move between files, `f` toggles the file panel, `t` switches between side by side and inline. `<C-w>h` and `<C-w>l` move between the old (left) and new (right) panes. When you see something worth a comment, press `i` on the line and pick a type from the menu (note, suggestion, issue, praise). The comment renders as a box below the line with an icon in the gutter.
+`<Tab>` and `<S-Tab>` move between files, `f` toggles the file panel, `t` switches between side by side and inline. `<C-w>h` and `<C-w>l` move between the old (left) and new (right) panes. When you see something worth a comment, press `i` on the line and pick a type from the menu (note, suggestion, issue, praise). The comment box is a markdown buffer, so your `FileType markdown` settings, such as spell check, apply there. The comment renders as a box below the line with an icon in the gutter.
 
 For a multi-line comment, select the range visually and press `i`. For a comment about the whole file, press `F`. Comments on the left side only show on the left, and the same goes for the right.
 
@@ -110,7 +110,7 @@ A `~` before the line number means the old (left) side of the diff.
 
 *Notes left while reading files, with no diff open. They show up on the review and in the export like any other comment.*
 
-You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repo opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer while you browse, show up on the diff if you open a review later, and go out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. There are no default keymaps outside the diff. The [installation](#installation) snippet maps `<leader>rn`, `<leader>re` and `<leader>rd` for these.
+You don't need a diff open to leave a comment. `:Review note` on any line of any file in the repo opens the same popup, and `:'<,'>Review note` does it for a visual selection. Notes render in the buffer while you browse, show up on the diff if you open a review later, and go out in the same export as everything else. `:Review edit` and `:Review delete` work at the cursor in any buffer. `:Review list` also works with no diff open: pick a note and it opens the file at that line. There are no default keymaps outside the diff. The [installation](#installation) snippet maps `<leader>rn`, `<leader>re` and `<leader>rd` for these.
 
 Notes follow your edits. They're attached to extmarks while the buffer is open, and the stored line numbers get updated when you write the file, so adding lines above a note keeps it on the same code.
 
@@ -250,6 +250,7 @@ Comments come out as markdown meant to be pasted into an AI chat:
 I reviewed your code and have the following comments. Please address them.
 
 Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
+Lines prefixed with ~ refer to the old (left) side of the diff.
 
 1. **[ISSUE]** `src/components/Button.tsx:23` - Wrapping onClick creates a new function every render
 2. **[SUGGESTION]** `src/utils/api.ts:~45` - The old implementation was cleaner
@@ -257,6 +258,8 @@ Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observa
 ```
 
 Lines prefixed with `~` (e.g. `:~45`) refer to the old (left) side of the diff. Range comments use `start-end` notation.
+
+`export.header` replaces the first four lines. A custom header replaces the comment types and the `~` legend too, so explain them in your header if the reader needs them.
 
 ## Export targets
 

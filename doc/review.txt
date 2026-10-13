@@ -26,7 +26,8 @@ chat.
 Features:
 - Line and range comments with box-style virtual text
 - Four comment types: Note, Suggestion, Issue, Praise
-- Comments persist per branch across sessions
+- Comments persist per repository across sessions
+- Notes on any file with `:Review note`, no diff needed
 - Export format optimized for AI conversations
 - Commit picker to review specific revision ranges
 - Branch picker with optional interactive base selection
@@ -35,7 +36,7 @@ Features:
 ==============================================================================
 2. REQUIREMENTS                                          *review-requirements*
 
-- Neovim >= 0.9
+- Neovim >= 0.10
 - codediff.nvim (https://github.com/esmuellert/codediff.nvim)
 - nui.nvim (https://github.com/MunifTanjim/nui.nvim)
 
@@ -54,6 +55,9 @@ All commands use the `:Review` prefix.
 :Review commits             Open commit picker (last 50 commits). Use
                             `<Space>` to select a range, `<CR>` to confirm.
 
+:Review commits {sha}       Review a single commit (diffs {sha}^ against
+                            {sha}).
+
 :Review commits {rev1} {rev2}
                             Review a specific revision range directly,
                             skipping the picker.
@@ -70,12 +74,13 @@ All commands use the `:Review` prefix.
                             detected default.
 
                                                                *:Review-close*
-:Review close               Export comments to clipboard and close the
-                            review tab.
+:Review close               Export comments and close the review tab. When
+                            `export.clear_on_close` is true (default), the
+                            comments are archived and cleared.
 
                                                               *:Review-export*
-:Review export              Export comments to clipboard and open a
-                            preview split.
+:Review export              Export comments (clipboard and
+                            `export.on_export`) and open a preview split.
 
                                                              *:Review-preview*
 :Review preview             Preview exported markdown in a vertical split.
@@ -84,13 +89,29 @@ All commands use the `:Review` prefix.
 :Review sidekick            Send comments to sidekick.nvim.
 
                                                                 *:Review-list*
-:Review list                List all comments with a picker to jump to any.
+:Review list                List all comments in a picker. In a review,
+                            the picked comment opens in the diff, in the
+                            pane of its side, at its line. Outside a review,
+                            its file opens at its line.
 
                                                                *:Review-clear*
-:Review clear               Clear all comments.
+:Review clear               Archive and clear all comments.
 
                                                               *:Review-toggle*
 :Review toggle              Toggle between readonly and edit mode.
+
+                                                                *:Review-note*
+:Review note                Add a comment on the current line of any file in
+                            the repository. No diff needs to be open.
+
+:'<,'>Review note           Add a comment on the selected lines.
+
+                                                                *:Review-edit*
+:Review edit                Edit the comment at the cursor, in a diff or in
+                            any buffer.
+
+                                                              *:Review-delete*
+:Review delete              Delete the comment at the cursor.
 
 ==============================================================================
 4. CONFIGURATION                                              *review-config*
@@ -139,6 +160,13 @@ All fields are optional; defaults are shown.
         pick_base = false,
       },
 
+      export = {
+        header = "...",  -- see |review-config-export|
+        clipboard = true,
+        on_export = nil,
+        clear_on_close = true,
+      },
+
       keymaps = { ... },  -- see |review-keymaps|
     })
 <
@@ -160,6 +188,25 @@ branch.pick_base ~
     after the target picker. `branch.base`, or the detected default, is
     initially highlighted. Defaults to false. Commands that supply {target}
     remain non-interactive.
+
+                                                        *review-config-export*
+export.header ~
+    Text at the top of every export. The default has four lines: an
+    instruction, the comment types and the `~` legend. A custom header
+    replaces all four lines, so explain the comment types and `~` in it if
+    the reader needs them. See |review-export|.
+
+export.clipboard ~
+    When true (default), copy the export to the `+` and `*` registers.
+
+export.on_export ~
+    `function(markdown, comments)` that runs on every export (`C`,
+    `:Review export` and `q`). Use it to send the export to a tmux pane, a
+    file or an agent. Defaults to nil.
+
+export.clear_on_close ~
+    When true (default), `q` and `:Review close` archive and clear the
+    comments after the export. When false, the comments stay.
 
 ==============================================================================
 5. KEYMAPS                                                   *review-keymaps*
@@ -215,7 +262,9 @@ ACTIONS                                               *review-keymaps-actions*
 
 POPUP                                                 *review-keymaps-popup*
 
-These keymaps are active inside the comment popup window:
+These keymaps are active inside the comment popup window. The comment box
+has the `markdown` filetype, so your markdown |FileType| autocommands and
+ftplugins (for example, spell check) apply to it.
 
     Key         Description ~
     `<C-s>`       Submit comment                         |i, n|
@@ -250,17 +299,32 @@ calling setup() or in a |ColorScheme| autocommand.
 ==============================================================================
 7. EXPORT FORMAT                                              *review-export*
 
-Comments are exported as markdown optimized for AI consumption. The format
-includes file path, line numbers, diff side (old/new), comment type, and
-surrounding code context. Use `:Review export` to preview.
+Comments are exported as a numbered markdown list after a header: >markdown
+    I reviewed your code and have the following comments. Please address them.
+
+    Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
+    Lines prefixed with ~ refer to the old (left) side of the diff.
+
+    1. **[ISSUE]** `src/api.ts:23` - This endpoint does not handle errors
+    2. **[SUGGESTION]** `src/utils.ts:~10-~14` - The old code was cleaner
+    3. **[NOTE]** `README.md` - Add a section about the export
+<
+A `~` before a line number means the old (left) side of the diff. Ranges use
+`start-end`. A comment with no line number is about the whole file. Change
+the header with `export.header` (|review-config-export|). Use
+`:Review preview` to see the export without copying it.
 
 ==============================================================================
 8. STORAGE                                                   *review-storage*
 
-Comments are stored as JSON files in: >
-    ~/.local/share/nvim/review/{project-hash}-{branch}.json
+Each repository has one comment store, a JSON file in: >
+    stdpath("data")/review/{project-hash}.json
 <
-Sessions auto-expire after 7 days and are cleaned up on load.
+On Linux and macOS, stdpath("data") is usually `~/.local/share/nvim`. The
+store keeps comments across restarts. `:Review clear` moves it to
+`stdpath("data")/review/archive/` and starts an empty store. `q` and
+`:Review close` do the same when `export.clear_on_close` is true. Archived
+files are deleted after 30 days. The live store does not expire.
 
 ==============================================================================
  vim:tw=78:ts=8:ft=help:norl:
