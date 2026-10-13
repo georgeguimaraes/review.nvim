@@ -4,6 +4,7 @@ local store = require("review.store")
 local hooks = require("review.hooks")
 local popup = require("review.popup")
 local marks = require("review.marks")
+local utils = require("review.utils")
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = "review.nvim" })
@@ -248,26 +249,24 @@ function M.list()
 
     local comment = choice.comment
 
-    -- Try to navigate to the file in codediff explorer
-    local tabpage = hooks.get_current_tabpage()
-    local explorer = tabpage and hooks.get_explorer(tabpage)
-    local found_file = false
+    -- In a review, open the file through the explorer. Elsewhere (notes on
+    -- any file), edit it directly.
+    local explorer = hooks.get_explorer(vim.api.nvim_get_current_tabpage())
     if explorer then
-      local explorer_tree_mod = require("codediff.ui.explorer.tree")
-      -- Find and select the file in explorer
-      -- This is a best-effort navigation
-      for _, node in ipairs(explorer_tree_mod.get_all_files(explorer.tree)) do
+      local file_data
+      for _, node in ipairs(require("codediff.ui.explorer.tree").get_all_files(explorer.tree)) do
         if node.data.path == comment.file then
-          found_file = true
-          explorer.on_file_select(node.data)
+          file_data = node.data
           break
         end
       end
-    end
-
-    if not found_file then
-        vim.notify("No matching explorer item found to navigate for: ".. comment.file, vim.log.levels.WARN)
+      if not file_data then
+        notify("Not in this review's file list: " .. comment.file, vim.log.levels.WARN)
         return
+      end
+      explorer.on_file_select(file_data)
+    else
+      vim.cmd.edit(vim.fn.fnameescape(utils.git_root() .. "/" .. comment.file))
     end
 
     -- Jump to line after a short delay (line 1 for file-level comments)

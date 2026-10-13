@@ -123,6 +123,30 @@ T["notes follow edits once the file is written"] = function()
   eq(child.api.nvim_buf_get_lines(0, 3, 4, false), { "function M.a()" })
 end
 
+local function pick_first_from_list()
+  child.lua([[vim.ui.select = function(items, _, on_choice) on_choice(items[1]) end]])
+  child.cmd("Review list")
+end
+
+T[":Review list opens a note's file when no review is open"] = function()
+  child.cmd("edit utils.lua")
+  child.type_keys("3G")
+  add_note_here("in utils")
+  child.cmd("edit api.lua")
+  pick_first_from_list()
+  E.wait_for([[vim.fn.expand("%:t") == "utils.lua" and vim.fn.line(".") == 3]], "utils.lua at line 3")
+end
+
+T[":Review list switches the review to the comment's file and line"] = function()
+  vim.fn.writefile({ "local M = {}", "", "M.x = 1", "", "return M" }, repo .. "/utils.lua")
+  child.lua([[require("review.store").add("utils.lua", 3, "note", "in utils")]])
+  child.cmd("Review")
+  E.wait_ready("api.lua")
+  pick_first_from_list()
+  E.wait_ready("utils.lua")
+  E.wait_for([[vim.fn.line(".") == 3]], "cursor on line 3")
+end
+
 T["refuses files outside the repository"] = function()
   local outside = vim.fn.tempname() .. ".lua"
   vim.fn.writefile({ "elsewhere" }, outside)
