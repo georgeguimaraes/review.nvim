@@ -8,6 +8,7 @@ local M = {}
 ---@field codediff ReviewCodediffConfig
 
 ---@class ReviewExportConfig
+---@field header string header block prepended to exported markdown
 ---@field clipboard boolean copy the markdown to the + and * registers
 ---@field on_export nil|fun(markdown: string, comments: Comment[]) called on every export
 ---@field clear_on_close boolean archive and clear comments when the review closes (q)
@@ -98,6 +99,12 @@ M.defaults = {
     base = nil, -- base for :Review branch; nil picks main or master
   },
   export = {
+    header = table.concat({
+      "I reviewed your code and have the following comments. Please address them.",
+      "",
+      "Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)",
+      "Lines prefixed with ~ refer to the old (left) side of the diff.",
+    }, "\n"),
     clipboard = true, -- copy exported markdown to the clipboard
     on_export = nil, -- function(markdown, comments) for tmux, an agent, a file...
     clear_on_close = true, -- q exports, archives and clears; C only exports

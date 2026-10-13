@@ -18,10 +18,7 @@ function M.generate_markdown()
   local lines = {}
 
   -- Header
-  table.insert(lines, "I reviewed your code and have the following comments. Please address them.")
-  table.insert(lines, "")
-  table.insert(lines, "Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)")
-  table.insert(lines, "Lines prefixed with ~ refer to the old (left) side of the diff.")
+  table.insert(lines, config.get().export.header)
   table.insert(lines, "")
 
   -- Numbered list of comments

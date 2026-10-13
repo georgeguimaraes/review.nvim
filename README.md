@@ -201,6 +201,7 @@ All keymaps can be set to `false` to disable them.
 |--------|---------|---------|
 | `codediff.readonly` | `true` | Diff panes are read-only, with the single-key mappings above |
 | `branch.base` | `nil` | Base for `:Review branch`; `nil` picks `origin/HEAD`, then `main` or `master` |
+| `export.header` | Current three-line preamble | Header block prepended to exported markdown |
 | `export.clipboard` | `true` | Copy exported markdown to the `+` and `*` registers |
 | `export.on_export` | `nil` | `function(markdown, comments)` run on every export |
 | `export.clear_on_close` | `true` | `q` archives and clears comments after exporting |
@@ -231,6 +232,7 @@ require("review").setup({
     base = "main",
   },
   export = {
+    header = "Review feedback:\nPlease address every comment.",
     clipboard = true,
     on_export = nil,
     clear_on_close = true,
