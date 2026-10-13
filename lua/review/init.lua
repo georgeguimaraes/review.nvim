@@ -331,9 +331,13 @@ function M.preview()
 end
 
 function M.clear()
+  local had_marks = next(storage.load_reviewed()) ~= nil
   local archived = store.archive_and_clear()
   require("review.marks").clear_all()
-  vim.notify(archived and "All comments archived and cleared" or "No comments to clear", vim.log.levels.INFO, { title = "review.nvim" })
+  local message = archived and "All comments archived and cleared"
+    or had_marks and "Reviewed marks cleared"
+    or "No comments to clear"
+  vim.notify(message, vim.log.levels.INFO, { title = "review.nvim" })
 end
 
 function M.count()

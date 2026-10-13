@@ -136,6 +136,7 @@ T["r on the last file says all files are reviewed, and :Review clear drops the m
 
   child.cmd("Review clear")
   E.wait_for(string.format([[(%s):find("✓", 1, true) == nil]], E.EXPLORER_TEXT), "marks cleared")
+  E.wait_for([[vim.fn.execute("messages"):find("Reviewed marks cleared", 1, true) ~= nil]], "clear message")
 end
 
 T["marks persist across restarts"] = function()
