@@ -1,7 +1,7 @@
-*review.txt*  Code review annotations for codediff.nvim
+*review.txt*  Code review comments for codediff.nvim
 
 Author: George Guimarães
-License: MIT
+License: Apache License, Version 2.0
 
 ==============================================================================
 CONTENTS                                                     *review-contents*
@@ -18,85 +18,109 @@ CONTENTS                                                     *review-contents*
 ==============================================================================
 1. OVERVIEW                                                  *review-overview*
 
-review.nvim adds code review annotations on top of |codediff.nvim|. You can
-leave comments (notes, suggestions, issues, praise) on specific lines in a
-diff view, then export them to clipboard or send them to sidekick.nvim for AI
+review.nvim adds code review comments to |codediff.nvim|. You add comments
+(notes, suggestions, issues and praise) to lines in a diff. Then you export
+the comments to the clipboard, or you send them to sidekick.nvim for an AI
 chat.
 
 Features:
-- Line and range comments with box-style virtual text
-- Four comment types: Note, Suggestion, Issue, Praise
-- Comments persist per branch across sessions
-- Export format optimized for AI conversations
-- Commit picker to review specific revision ranges
-- Branch picker with optional interactive base selection
-- Readonly and edit modes with separate keymap sets
+- Comments on a line or on a range of lines, shown as boxes of virtual text
+- Four comment types: Note, Suggestion, Issue and Praise
+- One comment store for each repository, kept across restarts
+- Notes on any file with `:Review note`, with no diff open
+- A markdown export for AI chats
+- A commit picker to review a revision range
+- A branch picker, with an optional picker for the base
+- A readonly mode and an edit mode, each with its own keymaps
 
 ==============================================================================
 2. REQUIREMENTS                                          *review-requirements*
 
-- Neovim >= 0.9
+- Neovim >= 0.10
 - codediff.nvim (https://github.com/esmuellert/codediff.nvim)
 - nui.nvim (https://github.com/MunifTanjim/nui.nvim)
 
 ==============================================================================
 3. COMMANDS                                                 *review-commands*
 
-All commands use the `:Review` prefix.
+All commands start with `:Review`.
 
                                                                      *:Review*
-:Review                     Open codediff diff view with review keymaps.
-                            Shows staged and unstaged changes.
+:Review                     Open the codediff view with the review keymaps.
+                            The view shows the staged and unstaged changes.
 
 :Review open                Same as `:Review`.
 
                                                              *:Review-commits*
-:Review commits             Open commit picker (last 50 commits). Use
-                            `<Space>` to select a range, `<CR>` to confirm.
+:Review commits             Open the commit picker with the last 50 commits.
+                            Use `<Space>` to select a range. Use `<CR>` to
+                            confirm.
+
+:Review commits {sha}       Review a single commit (diffs {sha}^ against
+                            {sha}).
 
 :Review commits {rev1} {rev2}
-                            Review a specific revision range directly,
-                            skipping the picker.
+                            Review a revision range. This command does not
+                            open the picker.
 
                                                               *:Review-branch*
-:Review branch              Pick a target branch to review. By default its
-                            base is resolved automatically. When
-                            `branch.pick_base` is true, a second picker opens
-                            for the base branch.
+:Review branch              Pick a branch to review. review.nvim finds the
+                            base. When `branch.pick_base` is true, a second
+                            picker opens for the base.
 
 :Review branch {target} [{base}]
-                            Review a branch directly, skipping all pickers.
-                            When {base} is omitted, use `branch.base` or the
-                            detected default.
+                            Review a branch. This command does not open a
+                            picker. When you do not give {base}, the base is
+                            `branch.base` or the base that review.nvim finds.
 
                                                                *:Review-close*
-:Review close               Export comments to clipboard and close the
-                            review tab.
+:Review close               Export the comments and close the review tab.
+                            When `export.clear_on_close` is true (default),
+                            review.nvim also archives and clears the
+                            comments.
 
                                                               *:Review-export*
-:Review export              Export comments to clipboard and open a
-                            preview split.
+:Review export              Export the comments to the targets in
+                            |review-config-export| and open a preview split.
 
                                                              *:Review-preview*
-:Review preview             Preview exported markdown in a vertical split.
+:Review preview             Show the export in a vertical split.
 
                                                             *:Review-sidekick*
-:Review sidekick            Send comments to sidekick.nvim.
+:Review sidekick            Send the comments to sidekick.nvim.
 
                                                                 *:Review-list*
-:Review list                List all comments with a picker to jump to any.
+:Review list                Show all comments in a picker. In a review, the
+                            comment that you pick opens in the diff, at its
+                            line, in the pane of its side. If the file is
+                            not in the review, review.nvim shows a warning.
+                            Outside a review, the file of the comment opens
+                            at its line.
 
                                                                *:Review-clear*
-:Review clear               Clear all comments.
+:Review clear               Archive and clear all comments.
 
                                                               *:Review-toggle*
-:Review toggle              Toggle between readonly and edit mode.
+:Review toggle              Toggle between readonly mode and edit mode.
+
+                                                                *:Review-note*
+:Review note                Add a comment on the current line of a file in
+                            the repository. You do not need a diff.
+
+:'<,'>Review note           Add a comment on the selected lines.
+
+                                                                *:Review-edit*
+:Review edit                Edit the comment at the cursor, in a diff or in
+                            a different buffer.
+
+                                                              *:Review-delete*
+:Review delete              Delete the comment at the cursor.
 
 ==============================================================================
 4. CONFIGURATION                                              *review-config*
 
-Call `require("review").setup(opts)` with any of the following options.
-All fields are optional; defaults are shown.
+Call `require("review").setup(opts)` with the options below. All the fields
+are optional. The example shows the default values.
 >lua
     require("review").setup({
       comment_types = {
@@ -139,96 +163,124 @@ All fields are optional; defaults are shown.
         pick_base = false,
       },
 
+      export = {
+        -- header: four lines, see |review-config-export|
+        clipboard = true,
+        on_export = nil,
+        clear_on_close = true,
+      },
+
       keymaps = { ... },  -- see |review-keymaps|
     })
 <
 
                                                      *review-config-codediff*
 codediff.readonly ~
-    When true (default), diff buffers are readonly and simple single-key
-    keymaps are active (e.g. `i` to add comment). When false, leader-based
-    keymaps are used instead. Toggle at runtime with `R`.
+    When true (default), the diff buffers are read-only and single-key
+    keymaps are active (for example, `i` adds a comment). When false, the
+    leader-based keymaps are active. Press `R` to toggle the mode.
 
                                                        *review-config-branch*
 branch.base ~
-    Automatic base used by `:Review branch` when it is not supplied. It is
-    also initially highlighted in the base picker. When nil (default), use
+    The base for `:Review branch` when you do not give one. The base picker
+    also puts the cursor on it. When nil (default), review.nvim uses
     `origin/HEAD`, then `main` or `master`.
 
 branch.pick_base ~
-    When true, the no-argument `:Review branch` command opens a base picker
-    after the target picker. `branch.base`, or the detected default, is
-    initially highlighted. Defaults to false. Commands that supply {target}
-    remain non-interactive.
+    When true, `:Review branch` with no arguments opens a base picker after
+    the target picker. The cursor starts on `branch.base` or on the base that
+    review.nvim finds. Defaults to false. When you give {target}, no picker
+    opens.
+
+                                                        *review-config-export*
+export.header ~
+    The text at the top of every export. The default has four lines: an
+    instruction, the comment types and the `~` legend. A custom header
+    replaces all four lines. If the reader needs the comment types and the
+    `~` legend, explain them in your header. See |review-export|.
+
+export.clipboard ~
+    When true (default), copy the export to the `+` and `*` registers.
+
+export.on_export ~
+    A `function(markdown, comments)` that runs on every export (`C`,
+    `:Review export` and `q`). Use it to send the export to a tmux pane, a
+    file or an agent. Defaults to nil.
+
+export.clear_on_close ~
+    When true (default), `q` and `:Review close` archive and clear the
+    comments after the export. When false, the comments stay.
 
 ==============================================================================
 5. KEYMAPS                                                   *review-keymaps*
 
-All keymaps can be customized via `opts.keymaps`. Set a key to `false` to
-disable it. Keymaps are buffer-local to the review diff buffers.
+Use `opts.keymaps` to change the keymaps. To disable a keymap, set it to
+`false`. The keymaps are local to the buffers of the review diff.
 
 READONLY MODE (default)                              *review-keymaps-readonly*
 
 These keymaps are active when `codediff.readonly = true`:
 
     Key     Description ~
-    `i`       Add comment (opens type picker)         |n, x|
-    `e`       Edit comment at cursor                  |n|
-    `d`       Delete comment at cursor                |n|
-    `F`       Add file-level comment                  |n|
+    `i`       Add a comment (opens the type picker)   |n, x|
+    `e`       Edit the comment at the cursor          |n|
+    `d`       Delete the comment at the cursor        |n|
+    `F`       Add a comment on the whole file         |n|
 
 EDIT MODE                                               *review-keymaps-edit*
 
 These keymaps are active when `codediff.readonly = false`:
 
     Key           Description ~
-    `<localleader>cc`    Add comment (pick type)              |n, x|
-    `<localleader>cn`    Add note                            |n, x|
-    `<localleader>cs`    Add suggestion                      |n, x|
-    `<localleader>ci`    Add issue                           |n, x|
-    `<localleader>cp`    Add praise                          |n, x|
-    `<localleader>cf`    Add file-level comment              |n|
-    `<localleader>ce`    Edit comment at cursor              |n|
-    `<localleader>cd`    Delete comment at cursor            |n|
+    `<localleader>cc`    Add a comment (pick the type)       |n, x|
+    `<localleader>cn`    Add a note                          |n, x|
+    `<localleader>cs`    Add a suggestion                    |n, x|
+    `<localleader>ci`    Add an issue                        |n, x|
+    `<localleader>cp`    Add a praise                        |n, x|
+    `<localleader>cf`    Add a comment on the whole file     |n|
+    `<localleader>ce`    Edit the comment at the cursor      |n|
+    `<localleader>cd`    Delete the comment at the cursor    |n|
 
 NAVIGATION                                               *review-keymaps-nav*
 
     Key         Description ~
-    `]n`          Next comment in file                  |n|
-    `[n`          Previous comment in file              |n|
-    `<Tab>`       Next file in explorer                 |n|
-    `<S-Tab>`     Previous file in explorer             |n|
-    `f`           Toggle file panel                     |n|
+    `]n`          Next comment in the file              |n|
+    `[n`          Previous comment in the file          |n|
+    `<Tab>`       Next file in the file panel           |n|
+    `<S-Tab>`     Previous file in the file panel       |n|
+    `f`           Show or hide the file panel           |n|
     `c`           List all comments                     |n|
 
 ACTIONS                                               *review-keymaps-actions*
 
     Key         Description ~
-    `C`           Export to clipboard + preview          |n|
+    `C`           Export to the clipboard and preview    |n|
     `S`           Send to sidekick.nvim                  |n|
-    `<C-r>`       Clear all comments                     |n|
-    `R`           Toggle readonly/edit mode               |n|
-    `q`           Export & close review                   |n|
-    `?`           Show help popup                         |n|
-    `t`           Toggle layout (side-by-side/inline)     |n|
-    `g?`          Show codediff help                      |n|
+    `<C-r>`       Archive and clear all comments         |n|
+    `R`           Toggle readonly mode and edit mode     |n|
+    `q`           Export and close the review            |n|
+    `?`           Show the help popup                    |n|
+    `t`           Toggle side-by-side and inline layout  |n|
+    `g?`          Show the codediff help                 |n|
 
 POPUP                                                 *review-keymaps-popup*
 
-These keymaps are active inside the comment popup window:
+These keymaps are active in the comment popup. The comment box has the
+`markdown` filetype. Thus, your markdown |FileType| autocommands and
+ftplugins apply to it (for example, spell check).
 
     Key         Description ~
-    `<C-s>`       Submit comment                         |i, n|
-    `<CR>`        Submit comment (normal mode only)      |n|
+    `<C-s>`       Submit the comment                     |i, n|
+    `<CR>`        Submit the comment (normal mode only)  |n|
     `q`           Cancel (normal mode)                   |n|
     `<Esc>`       Cancel (normal mode)                   |n|
-    `<Tab>`       Cycle comment type                     |i, n|
+    `<Tab>`       Go to the next comment type            |i, n|
 
 ==============================================================================
 6. HIGHLIGHT GROUPS                                      *review-highlights*
 
-These highlight groups are defined with default links. Override them after
-calling setup() or in a |ColorScheme| autocommand.
+review.nvim defines these highlight groups with default links. To change
+them, set them after you call setup() or in a |ColorScheme| autocommand.
 
   Group                   Default link      Usage ~
   `ReviewNote`              DiagnosticInfo    Note virtual text and sign
@@ -237,8 +289,8 @@ calling setup() or in a |ColorScheme| autocommand.
   `ReviewPraise`            DiagnosticOk      Praise virtual text and sign
   `ReviewSign`              Comment           Sign column marker (●)
   `ReviewVirtText`          Comment           General virtual text
-  `ReviewPickerHash`        Identifier        Commit hash in picker
-  `ReviewPickerMeta`        Comment           Author/date in picker
+  `ReviewPickerHash`        Identifier        Commit hash in the picker
+  `ReviewPickerMeta`        Comment           Author and date in the picker
   `ReviewPickerSelected`    String            Selected commit marker
 
   Group                   Default bg        Usage ~
@@ -250,17 +302,32 @@ calling setup() or in a |ColorScheme| autocommand.
 ==============================================================================
 7. EXPORT FORMAT                                              *review-export*
 
-Comments are exported as markdown optimized for AI consumption. The format
-includes file path, line numbers, diff side (old/new), comment type, and
-surrounding code context. Use `:Review export` to preview.
+The export is a header and a numbered markdown list: >markdown
+    I reviewed your code and have the following comments. Please address them.
+
+    Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
+    Lines prefixed with ~ refer to the old (left) side of the diff.
+
+    1. **[ISSUE]** `src/api.ts:23` - This endpoint does not handle errors
+    2. **[SUGGESTION]** `src/utils.ts:~10-~14` - The old code was cleaner
+    3. **[NOTE]** `README.md` - Add a section about the export
+<
+A `~` before a line number means the old (left) side of the diff. Ranges use
+`start-end`. A comment with no line number is about the whole file. To change
+the header, use `export.header` (|review-config-export|). To see the export
+without a copy to the clipboard, use `:Review preview`.
 
 ==============================================================================
 8. STORAGE                                                   *review-storage*
 
-Comments are stored as JSON files in: >
-    ~/.local/share/nvim/review/{project-hash}-{branch}.json
+Each repository has one comment store. The store is a JSON file in: >
+    stdpath("data")/review/{project-hash}.json
 <
-Sessions auto-expire after 7 days and are cleaned up on load.
+On Linux and macOS, stdpath("data") is usually `~/.local/share/nvim`. The
+store keeps the comments across restarts. `:Review clear` moves the store to
+`stdpath("data")/review/archive/` and starts an empty store. `q` and
+`:Review close` do the same when `export.clear_on_close` is true. After 30
+days, review.nvim deletes the archived files. The live store does not expire.
 
 ==============================================================================
  vim:tw=78:ts=8:ft=help:norl:
