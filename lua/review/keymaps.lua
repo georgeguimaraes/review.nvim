@@ -5,6 +5,7 @@ local hooks = require("review.hooks")
 local config = require("review.config")
 local comments = require("review.comments")
 local export = require("review.export")
+local reviewed = require("review.reviewed")
 
 -- Track which buffers have keymaps set and what keys were mapped
 local keymapped_buffers = {}
@@ -112,8 +113,14 @@ local function show_help()
 
   entry("next_comment", "Next comment", nav_entries)
   entry("prev_comment", "Previous comment", nav_entries)
-  entry("next_file", "Next file", nav_entries)
-  entry("prev_file", "Previous file", nav_entries)
+  entry(readonly and "readonly_toggle_reviewed" or "toggle_reviewed", "Mark file reviewed, go to next", nav_entries)
+  entry("next_file", "Next unreviewed file", nav_entries)
+  entry("prev_file", "Previous unreviewed file", nav_entries)
+  local ok_cd, cd_config = pcall(require, "codediff.config")
+  local view_keys = ok_cd and cd_config.options.keymaps and cd_config.options.keymaps.view or {}
+  if is_enabled(view_keys.next_file) and is_enabled(view_keys.prev_file) then
+    table.insert(nav_entries, { key = view_keys.next_file .. " " .. view_keys.prev_file, desc = "Next/previous file (all files)" })
+  end
   entry("toggle_file_panel", "Toggle file panel", nav_entries)
   entry("list_comments", "List comments", nav_entries)
 
@@ -182,6 +189,25 @@ local function show_help()
   help_popup:map("n", "<Esc>", close_help, map_opts)
 end
 
+-- Jump to the first hunk of the file in the current diff pane
+local function jump_to_first_hunk()
+  local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
+  if not ok then return end
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  local session = lifecycle.get_session(tabpage)
+  if not session or not session.stored_diff_result then return end
+  local diff_result = session.stored_diff_result
+  if #diff_result.changes == 0 then return end
+
+  local orig_buf, mod_buf = lifecycle.get_buffers(tabpage)
+  local current_buf = vim.api.nvim_get_current_buf()
+  local is_original = current_buf == orig_buf
+
+  local first_hunk = diff_result.changes[1]
+  local target_line = is_original and first_hunk.original.start_line or first_hunk.modified.start_line
+  pcall(vim.api.nvim_win_set_cursor, 0, { target_line, 0 })
+end
+
 ---@param bufnr number
 local function set_buffer_keymaps(bufnr)
   -- Clear existing keymaps first
@@ -206,34 +232,27 @@ local function set_buffer_keymaps(bufnr)
     end
   end
 
-  -- Helper to jump to first hunk in current file
-  local function jump_to_first_hunk()
-    local ok, lifecycle = pcall(require, "codediff.ui.lifecycle")
-    if not ok then return end
-    local tabpage = vim.api.nvim_get_current_tabpage()
-    local session = lifecycle.get_session(tabpage)
-    if not session or not session.stored_diff_result then return end
-    local diff_result = session.stored_diff_result
-    if #diff_result.changes == 0 then return end
-
-    local orig_buf, mod_buf = lifecycle.get_buffers(tabpage)
-    local current_buf = vim.api.nvim_get_current_buf()
-    local is_original = current_buf == orig_buf
-
-    local first_hunk = diff_result.changes[1]
-    local target_line = is_original and first_hunk.original.start_line or first_hunk.modified.start_line
-    pcall(vim.api.nvim_win_set_cursor, 0, { target_line, 0 })
-  end
-
-  -- File navigation helper
+  -- File navigation: skip files marked as reviewed. With no marks, use
+  -- codediff's own navigation (it honours cycle_next_file).
   local function navigate(direction)
     return function()
-      local tabpage = vim.api.nvim_get_current_tabpage()
-      local explorer_obj = hooks.get_explorer(tabpage)
-      if explorer_obj then
+      local explorer_obj = hooks.get_explorer(vim.api.nvim_get_current_tabpage())
+      if not explorer_obj then return end
+      local handled, moved = reviewed.skip_to_unreviewed(explorer_obj, direction)
+      if not handled then
         require("codediff.ui.explorer")["navigate_" .. direction](explorer_obj)
+        moved = true
+      end
+      if moved then
         vim.defer_fn(jump_to_first_hunk, 100)
       end
+    end
+  end
+
+  local function toggle_reviewed()
+    local explorer_obj = hooks.get_explorer(vim.api.nvim_get_current_tabpage())
+    if explorer_obj and reviewed.toggle_current(explorer_obj) then
+      vim.defer_fn(jump_to_first_hunk, 100)
     end
   end
 
@@ -244,6 +263,7 @@ local function set_buffer_keymaps(bufnr)
     set(km.readonly_add_file, function() comments.file_comment() end, "File comment")
     set(km.readonly_delete, function() comments.delete_at_cursor() end, "Delete comment")
     set(km.readonly_edit, function() comments.edit_at_cursor() end, "Edit comment")
+    set(km.readonly_toggle_reviewed, toggle_reviewed, "Toggle file reviewed")
     set(km.list_comments, function() comments.list() end, "List all comments")
     set(km.export_clipboard, function() export.to_clipboard() end, "Export to clipboard")
     set(km.send_sidekick, function() export.to_sidekick() end, "Send to sidekick")
@@ -265,6 +285,7 @@ local function set_buffer_keymaps(bufnr)
     set(km.add_file_comment, function() comments.file_comment() end, "File comment")
     set(km.delete_comment, function() comments.delete_at_cursor() end, "Delete comment")
     set(km.edit_comment, function() comments.edit_at_cursor() end, "Edit comment")
+    set(km.toggle_reviewed, toggle_reviewed, "Toggle file reviewed")
   end
 
   -- Navigation and close - available in both modes (or edit mode only for nav)

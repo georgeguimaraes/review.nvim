@@ -11,6 +11,7 @@ function M.setup()
     ReviewPickerHash = "Identifier",
     ReviewPickerMeta = "Comment",
     ReviewPickerSelected = "String",
+    ReviewReviewed = "DiagnosticOk",
   }
 
   for group, link in pairs(links) do

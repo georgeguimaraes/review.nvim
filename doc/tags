@@ -27,5 +27,6 @@ review-keymaps-popup	review.txt	/*review-keymaps-popup*
 review-keymaps-readonly	review.txt	/*review-keymaps-readonly*
 review-overview	review.txt	/*review-overview*
 review-requirements	review.txt	/*review-requirements*
+review-reviewed	review.txt	/*review-reviewed*
 review-storage	review.txt	/*review-storage*
 review.txt	review.txt	/*review.txt*

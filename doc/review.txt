@@ -14,6 +14,7 @@ CONTENTS                                                     *review-contents*
     6. Highlight Groups ...... |review-highlights|
     7. Export Format ......... |review-export|
     8. Storage ............... |review-storage|
+    9. Reviewed Files ........ |review-reviewed|
 
 ==============================================================================
 1. OVERVIEW                                                  *review-overview*
@@ -32,6 +33,7 @@ Features:
 - A commit picker to review a revision range
 - A branch picker, with an optional picker for the base
 - A readonly mode and an edit mode, each with its own keymaps
+- Files marked as reviewed, which `<Tab>` skips (|review-reviewed|)
 
 ==============================================================================
 2. REQUIREMENTS                                          *review-requirements*
@@ -226,6 +228,7 @@ These keymaps are active when `codediff.readonly = true`:
     `e`       Edit the comment at the cursor          |n|
     `d`       Delete the comment at the cursor        |n|
     `F`       Add a comment on the whole file         |n|
+    `r`       Mark reviewed and go to the next file   |n|
 
 EDIT MODE                                               *review-keymaps-edit*
 
@@ -238,6 +241,7 @@ These keymaps are active when `codediff.readonly = false`:
     `<localleader>ci`    Add an issue                        |n, x|
     `<localleader>cp`    Add a praise                        |n, x|
     `<localleader>cf`    Add a comment on the whole file     |n|
+    `<localleader>cr`    Mark the file as reviewed           |n|
     `<localleader>ce`    Edit the comment at the cursor      |n|
     `<localleader>cd`    Delete the comment at the cursor    |n|
 
@@ -246,8 +250,9 @@ NAVIGATION                                               *review-keymaps-nav*
     Key         Description ~
     `]n`          Next comment in the file              |n|
     `[n`          Previous comment in the file          |n|
-    `<Tab>`       Next file in the file panel           |n|
-    `<S-Tab>`     Previous file in the file panel       |n|
+    `<Tab>`       Next unreviewed file                  |n|
+    `<S-Tab>`     Previous unreviewed file              |n|
+    `]f` `[f`     Next or previous file (all files)     |n|
     `f`           Show or hide the file panel           |n|
     `c`           List all comments                     |n|
 
@@ -292,6 +297,7 @@ them, set them after you call setup() or in a |ColorScheme| autocommand.
   `ReviewPickerHash`        Identifier        Commit hash in the picker
   `ReviewPickerMeta`        Comment           Author and date in the picker
   `ReviewPickerSelected`    String            Selected commit marker
+  `ReviewReviewed`          DiagnosticOk      Check mark of a reviewed file
 
   Group                   Default bg        Usage ~
   `ReviewNoteLine`          #0d1f28           Note line background
@@ -328,6 +334,26 @@ store keeps the comments across restarts. `:Review clear` moves the store to
 `stdpath("data")/review/archive/` and starts an empty store. `q` and
 `:Review close` do the same when `export.clear_on_close` is true. After 30
 days, review.nvim deletes the archived files. The live store does not expire.
+
+==============================================================================
+9. REVIEWED FILES                                           *review-reviewed*
+
+When you finish a file, press `r` (`<localleader>cr` in edit mode). The file
+gets a check mark in the file panel, and the review goes to the next
+unreviewed file. Press `r` on a reviewed file to remove the mark. When all the
+files are reviewed, `r` stays on the file and tells you.
+
+`<Tab>` and `<S-Tab>` skip reviewed files. The codediff keymaps `]f` and `[f`
+go to every file. When no file is marked, `<Tab>` works as before.
+
+A mark is for the exact contents of both sides of the diff. review.nvim gets
+the blob of each side from git. If one side changes, the mark no longer
+applies. The check mark goes away at the next redraw of the file panel.
+
+The marks are in `stdpath("data")/review/{project-hash}.reviewed.json`. `q`
+(with `export.clear_on_close`) and `:Review clear` remove them with the
+comments. `C` and `:Review export` keep them. The export does not include the
+marks.
 
 ==============================================================================
  vim:tw=78:ts=8:ft=help:norl:

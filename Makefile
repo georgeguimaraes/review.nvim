@@ -43,6 +43,7 @@ deps/nui.nvim:
 demo: deps deps/tokyonight.nvim
 	vhs assets/demo.tape
 	vhs assets/notes.tape
+	vhs assets/reviewed.tape
 
 deps/tokyonight.nvim:
 	git clone --depth 1 https://github.com/folke/tokyonight.nvim $@

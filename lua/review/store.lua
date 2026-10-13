@@ -264,6 +264,7 @@ function M.archive_and_clear()
   local archived = storage.archive()
   M.reset()
   storage.clear()
+  require("review.reviewed").reset()
   return archived
 end
 

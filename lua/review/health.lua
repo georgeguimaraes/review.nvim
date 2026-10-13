@@ -64,6 +64,16 @@ local function check_codediff()
   else
     ok("codediff.ui.explorer.tree navigation API")
   end
+
+  local has_cd_config, cd_config = pcall(require, "codediff.config")
+  local explorer_opts = has_cd_config and cd_config.options and cd_config.options.explorer
+  local custom_formatter = explorer_opts and explorer_opts.formatters and type(explorer_opts.formatters.file) == "function"
+  local formatter_missing = missing_functions("codediff.ui.explorer.formatters", { "file" })
+  if not explorer_opts or (#formatter_missing > 0 and not custom_formatter) then
+    warn("codediff explorer formatters not found", { "Reviewed files won't show a check mark in the file panel. Update codediff.nvim" })
+  else
+    ok("codediff explorer formatters")
+  end
 end
 
 function M.check()

@@ -129,6 +129,7 @@ function M._check_codediff_session()
 
   -- Set up keymaps (uses codediff's set_tab_keymap internally)
   keymaps.setup_keymaps(tabpage)
+  require("review.reviewed").attach(tabpage)
 end
 
 ---Comments made on another branch are still in the per-repo store; say so
@@ -311,10 +312,16 @@ function M.close()
   vim.cmd("tabclose")
   hooks.on_session_closed()
 
-  if markdown and config.get().export.clear_on_close ~= false then
-    store.archive_and_clear()
-    require("review.marks").clear_all()
-    message = message .. ", archived and cleared"
+  if config.get().export.clear_on_close ~= false then
+    if markdown then
+      store.archive_and_clear()
+      require("review.marks").clear_all()
+      message = message .. ", archived and cleared"
+    else
+      -- Nothing to export, but the round still ends: drop the reviewed marks
+      storage.clear_reviewed()
+      require("review.reviewed").reset()
+    end
   end
   if message then
     vim.notify(message, vim.log.levels.INFO, { title = "review.nvim" })
@@ -330,9 +337,13 @@ function M.preview()
 end
 
 function M.clear()
+  local had_marks = next(storage.load_reviewed()) ~= nil
   local archived = store.archive_and_clear()
   require("review.marks").clear_all()
-  vim.notify(archived and "All comments archived and cleared" or "No comments to clear", vim.log.levels.INFO, { title = "review.nvim" })
+  local message = archived and "All comments archived and cleared"
+    or had_marks and "Reviewed marks cleared"
+    or "No comments to clear"
+  vim.notify(message, vim.log.levels.INFO, { title = "review.nvim" })
 end
 
 function M.count()

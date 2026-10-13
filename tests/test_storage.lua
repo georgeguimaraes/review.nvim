@@ -34,6 +34,15 @@ T["get_storage_path"]["legacy path carried the branch name"] = function()
   expect_match(legacy, "/review/%x+%-" .. vim.pesc(safe_branch) .. "%.json$")
 end
 
+T["reviewed"] = MiniTest.new_set()
+
+T["reviewed"]["round-trips the marks and clear removes them"] = function()
+  storage.save_reviewed({ ["aaa bbb a.lua"] = 1 })
+  eq(storage.load_reviewed(), { ["aaa bbb a.lua"] = 1 })
+  storage.clear()
+  eq(storage.load_reviewed(), {})
+end
+
 T["archive"] = MiniTest.new_set()
 
 T["archive"]["moves the live file into archive/ and keeps its contents"] = function()
