@@ -60,11 +60,12 @@ function M.get_storage_path()
   return string.format("%s/%s.json", data_dir, h)
 end
 
----Reviewed-file marks sit next to the comments, in their own file.
+---Reviewed-file marks sit next to the comments, in their own file. Uses the
+---cached git root: this is looked up on every explorer render.
 ---@return string|nil
 function M.reviewed_path()
-  local path = M.get_storage_path()
-  return path and (path:gsub("%.json$", ".reviewed.json"))
+  local root = require("review.utils").git_root()
+  return root and string.format("%s/%s.reviewed.json", data_dir, hash(root))
 end
 
 ---Where releases before the per-repo store kept the current branch's comments.
@@ -106,18 +107,22 @@ function M.archive()
   return nil
 end
 
+---@param path string
+---@param data table
+local function write_json(path, data)
+  pcall(vim.fn.mkdir, vim.fn.fnamemodify(path, ":h"), "p")
+  local file = io.open(path, "w")
+  if file then
+    file:write(vim.fn.json_encode(data))
+    file:close()
+  end
+end
+
 ---@param comments table
 function M.save(comments)
   local path = M.get_storage_path()
-  if not path then
-    return
-  end
-
-  local data = vim.fn.json_encode(comments)
-  local file = io.open(path, "w")
-  if file then
-    file:write(data)
-    file:close()
+  if path then
+    write_json(path, comments)
   end
 end
 
@@ -209,13 +214,8 @@ end
 ---@param marks table<string, number>
 function M.save_reviewed(marks)
   local path = M.reviewed_path()
-  if not path then
-    return
-  end
-  local file = io.open(path, "w")
-  if file then
-    file:write(vim.fn.json_encode(vim.tbl_isempty(marks) and vim.empty_dict() or marks))
-    file:close()
+  if path then
+    write_json(path, vim.tbl_isempty(marks) and vim.empty_dict() or marks)
   end
 end
 

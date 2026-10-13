@@ -10,11 +10,13 @@ local function notify(msg, level)
 end
 
 ---@type table<string, number>|nil reviewed_at by mark key
-local marks = nil
+local marks, marks_path = nil, nil
 
+-- Reload when the repo (and so the marks file) changes, e.g. after :cd
 local function get_marks()
-  if not marks then
-    marks = storage.load_reviewed()
+  local path = storage.reviewed_path()
+  if not marks or path ~= marks_path then
+    marks, marks_path = storage.load_reviewed(), path
   end
   return marks
 end
@@ -53,23 +55,40 @@ local function blobs_for_specs(git_root, specs)
   return blobs
 end
 
+-- Blob of each worktree file by absolute path, kept while mtime and size stay
+-- the same, so a render only hashes the files that changed.
+local worktree_cache = {}
+
 ---@param git_root string
 ---@param paths string[]
 ---@return table<string, string> blob (or "missing") by path
 local function blobs_for_worktree(git_root, paths)
-  local blobs, existing = {}, {}
+  local blobs, to_hash, stamps = {}, {}, {}
   for _, path in ipairs(paths) do
-    local stat = vim.uv.fs_stat(git_root .. "/" .. path)
-    if stat and stat.type == "file" then
-      table.insert(existing, path)
-    else
+    local abs = git_root .. "/" .. path
+    local stat = vim.uv.fs_stat(abs)
+    if not stat then
       blobs[path] = "missing"
+    elseif stat.type == "directory" then
+      -- A submodule: the new side is the commit it has checked out
+      local head = vim.fn.systemlist({ "git", "-C", abs, "rev-parse", "HEAD" })[1]
+      blobs[path] = vim.v.shell_error == 0 and head or "missing"
+    else
+      local stamp = string.format("%d.%d:%d", stat.mtime.sec, stat.mtime.nsec, stat.size)
+      local cached = worktree_cache[abs]
+      if cached and cached.stamp == stamp then
+        blobs[path] = cached.blob
+      else
+        table.insert(to_hash, path)
+        stamps[path] = stamp
+      end
     end
   end
-  if #existing > 0 then
-    local out = vim.fn.systemlist({ "git", "-C", git_root, "hash-object", "--stdin-paths" }, existing)
-    for i, path in ipairs(existing) do
+  if #to_hash > 0 then
+    local out = vim.fn.systemlist({ "git", "-C", git_root, "hash-object", "--stdin-paths" }, to_hash)
+    for i, path in ipairs(to_hash) do
       blobs[path] = (out[i] or ""):match("^%x+$") or "missing"
+      worktree_cache[git_root .. "/" .. path] = { stamp = stamps[path], blob = blobs[path] }
     end
   end
   return blobs
@@ -132,6 +151,23 @@ function M.is_reviewed(explorer, file)
   return key ~= nil and get_marks()[key] ~= nil
 end
 
+---Save the marks, dropping the ones for files in this review whose content
+---changed since: they can never match again.
+local function save(explorer, all)
+  local current, in_review = {}, {}
+  for _, key in pairs(keys_for(explorer)) do
+    current[key] = true
+    in_review[key:match("^%S+ %S+ (.*)$")] = true
+  end
+  for key in pairs(all) do
+    local path = key:match("^%S+ %S+ (.*)$")
+    if path and in_review[path] and not current[key] then
+      all[key] = nil
+    end
+  end
+  storage.save_reviewed(all)
+end
+
 local function redraw(explorer)
   if explorer.bufnr and vim.api.nvim_buf_is_valid(explorer.bufnr) and not explorer.is_hidden then
     explorer.tree:render()
@@ -145,6 +181,22 @@ local function visible_files(explorer)
     table.insert(files, entry.data)
   end
   return files
+end
+
+---Open a file and put the explorer cursor on its row, as codediff's own
+---navigation does (codediff/ui/explorer/actions.lua find_node_line).
+local function select(explorer, file)
+  explorer.on_file_select(file)
+  if not (explorer.winid and vim.api.nvim_win_is_valid(explorer.winid)) then
+    return
+  end
+  for line = 1, vim.api.nvim_buf_line_count(explorer.bufnr) do
+    local node = explorer.tree:get_node(line)
+    if node and node.data and node.data.path == file.path and node.data.group == file.group then
+      pcall(vim.api.nvim_win_set_cursor, explorer.winid, { line, 0 })
+      return
+    end
+  end
 end
 
 local function current_index(explorer, files)
@@ -196,7 +248,7 @@ function M.skip_to_unreviewed(explorer, direction)
   for k = 1, cur and n - 1 or n do
     local i = (start - 1 + step * k) % n + 1
     if not M.is_reviewed(explorer, files[i]) then
-      explorer.on_file_select(files[i])
+      select(explorer, files[i])
       return true, true
     end
   end
@@ -226,20 +278,21 @@ function M.toggle_current(explorer)
   end
   local key = keys_for(explorer)[file.group .. "\0" .. file.path]
   if not key then
+    notify("Could not mark " .. file.path .. ": it is not in this review's file list", vim.log.levels.WARN)
     return false
   end
 
   local all = get_marks()
   if all[key] then
     all[key] = nil
-    storage.save_reviewed(all)
+    save(explorer, all)
     redraw(explorer)
     notify(string.format("Unmarked %s (%d/%d reviewed)", file.path, progress(explorer, files)))
     return false
   end
 
   all[key] = os.time()
-  storage.save_reviewed(all)
+  save(explorer, all)
   redraw(explorer)
   notify(string.format("Reviewed %s (%d/%d)", file.path, progress(explorer, files)))
   local _, moved = M.skip_to_unreviewed(explorer, "next")
@@ -274,7 +327,8 @@ local function install_formatter()
   local inner = formatters.file or defaults.file
   wrapper = function(ctx)
     local layout = inner(ctx)
-    local explorer = hooks.get_explorer(vim.api.nvim_get_current_tabpage())
+    local tabpage = hooks.get_current_tabpage()
+    local explorer = tabpage and hooks.get_explorer(tabpage)
     if explorer and M.is_reviewed(explorer, ctx) then
       layout = vim.tbl_extend("force", {}, layout)
       layout.right = { { segments = { { text = "✓ ", hl = "ReviewReviewed" } } }, unpack(layout.right or {}) }

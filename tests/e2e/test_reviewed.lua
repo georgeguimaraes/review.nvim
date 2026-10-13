@@ -43,6 +43,15 @@ local function reviewed_rows()
   return table.concat(rows, ",")
 end
 
+---The explorer row under the explorer window's cursor.
+local function explorer_cursor_row()
+  return child.lua_get([[(function()
+    local e = require("review.hooks").get_explorer(vim.api.nvim_get_current_tabpage())
+    local line = vim.api.nvim_win_get_cursor(e.winid)[1]
+    return vim.api.nvim_buf_get_lines(e.bufnr, line - 1, line, false)[1]
+  end)()]])
+end
+
 local repo
 
 local T = MiniTest.new_set({
@@ -88,6 +97,7 @@ T["<Tab> skips reviewed files and ]f does not"] = function()
 
   child.type_keys("<Tab>")
   E.wait_ready("c.lua")
+  expect_match(explorer_cursor_row(), "c%.lua")
 
   child.type_keys("]f") -- wraps to a.lua
   E.wait_ready("a.lua")
@@ -106,6 +116,11 @@ T["a mark drops when the file changes"] = function()
   -- codediff only re-renders when the file list changes; any render picks up the new blobs
   child.lua([[require("review.hooks").get_explorer(vim.api.nvim_get_current_tabpage()).tree:render()]])
   E.wait_for(string.format([[(%s):find("✓", 1, true) == nil]], E.EXPLORER_TEXT), "check mark gone")
+
+  -- The next save drops the stale mark of a.lua
+  child.type_keys("r")
+  E.wait_for([[vim.tbl_count(require("review.storage").load_reviewed()) == 1]], "stale mark pruned")
+  eq(reviewed_rows(), "b.lua")
 end
 
 T["r on the last file says all files are reviewed, and :Review clear drops the marks"] = function()
