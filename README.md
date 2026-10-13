@@ -100,7 +100,7 @@ To add a comment, press `i` on the line and pick a type from the menu: note, sug
 
 For a comment on many lines, select the lines in visual mode and press `i`. For a comment on the whole file, press `F`. A comment on the left side shows only on the left side. A comment on the right side shows only on the right side.
 
-When you finish a file, press `r`. The file gets a ✓ in the file panel, and the review goes to the next unreviewed file. `<Tab>` and `<S-Tab>` also skip reviewed files. To go to every file, reviewed or not, use `]f` and `[f` from codediff. Press `r` on a reviewed file to remove the mark. A mark stays only while the file is the same. If the file changes, the mark goes away.
+When you finish a file, press `r`. The file gets a ✓ in the file panel, and the review goes to the next unreviewed file. `<Tab>` and `<S-Tab>` also skip reviewed files. To go to every file, reviewed or not, use `]f` and `[f` from codediff. Press `r` on a reviewed file to remove the mark. A mark stays only while the file is the same. If the file changes, the mark no longer applies, and `<Tab>` goes to the file again. The ✓ goes away at the next redraw of the file panel, for example when you go to a different file.
 
 `]n` and `[n` go to the next comment and the previous comment. `e` edits the comment at the cursor, and `d` deletes it. `c` shows a list of all the comments in all the files. Pick a comment to go to it.
 
@@ -171,7 +171,7 @@ The reviewed marks are in a second file next to the store. `q` and `:Review clea
 | `<localleader>cc` | Add a comment (pick the type from a menu) |
 | `<localleader>cn/cs/ci/cp` | Add a Note, Suggestion, Issue or Praise |
 | `<localleader>cf` | Add a comment on the whole file |
-| `<localleader>cr` | Mark the file as reviewed (press again to remove the mark) |
+| `<localleader>cr` | Mark the file as reviewed and go to the next unreviewed file (press again to remove the mark) |
 | `<localleader>cd` | Delete the comment |
 | `<localleader>ce` | Edit the comment |
 
@@ -196,7 +196,7 @@ To disable a keymap, set it to `false`.
 | `add_issue` | `<localleader>ci` | Add an issue (edit mode) |
 | `add_praise` | `<localleader>cp` | Add a praise (edit mode) |
 | `add_file_comment` | `<localleader>cf` | Add a comment on the whole file (edit mode) |
-| `toggle_reviewed` | `<localleader>cr` | Mark the file as reviewed, or remove the mark (edit mode) |
+| `toggle_reviewed` | `<localleader>cr` | Mark the file as reviewed and go to the next unreviewed file, or remove the mark (edit mode) |
 | `delete_comment` | `<localleader>cd` | Delete the comment (edit mode) |
 | `edit_comment` | `<localleader>ce` | Edit the comment (edit mode) |
 | `next_comment` | `]n` | Next comment |

@@ -66,9 +66,12 @@ local function blobs_for_worktree(git_root, paths)
   local blobs, to_hash, stamps = {}, {}, {}
   for _, path in ipairs(paths) do
     local abs = git_root .. "/" .. path
-    local stat = vim.uv.fs_stat(abs)
+    local stat = vim.uv.fs_lstat(abs)
     if not stat then
       blobs[path] = "missing"
+    elseif stat.type == "link" then
+      -- git stores the link text, so the target path is what can change
+      blobs[path] = "link:" .. (vim.uv.fs_readlink(abs) or "")
     elseif stat.type == "directory" then
       -- A submodule: the new side is the commit it has checked out
       local head = vim.fn.systemlist({ "git", "-C", abs, "rev-parse", "HEAD" })[1]
