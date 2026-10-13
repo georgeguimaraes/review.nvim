@@ -20,6 +20,7 @@ Inspired by [tuicr](https://github.com/agavra/tuicr).
 - A commit picker to review specific commits
 - A branch picker to review a branch against its base. The base is automatic, or you pick it. review.nvim uses the merge base and does not check out the branch.
 - Notes on any file, exported with the review comments
+- Files marked as reviewed: `r` marks a file and goes to the next one, and `<Tab>` skips reviewed files
 - The diff view of codediff.nvim
 
 ## Requirements
@@ -99,6 +100,8 @@ To add a comment, press `i` on the line and pick a type from the menu: note, sug
 
 For a comment on many lines, select the lines in visual mode and press `i`. For a comment on the whole file, press `F`. A comment on the left side shows only on the left side. A comment on the right side shows only on the right side.
 
+When you finish a file, press `r`. The file gets a ✓ in the file panel, and the review goes to the next unreviewed file. `<Tab>` and `<S-Tab>` also skip reviewed files. To go to every file, reviewed or not, use `]f` and `[f` from codediff. Press `r` on a reviewed file to remove the mark. A mark stays only while the file is the same. If the file changes, the mark goes away.
+
 `]n` and `[n` go to the next comment and the previous comment. `e` edits the comment at the cursor, and `d` deletes it. `c` shows a list of all the comments in all the files. Pick a comment to go to it.
 
 `C` copies the comments to the clipboard as markdown and shows a preview. `q` exports one more time, archives the comments and closes the review. The next review then starts empty. Paste the markdown into Claude Code, sidekick.nvim (`S`) or a different tool. The export looks like this:
@@ -132,6 +135,8 @@ review.nvim keeps one comment store for each repository, in `~/.local/share/nvim
 
 The store is for each repository, not for each branch. Thus, comments from a different branch stay in the store when you open a review on your branch. review.nvim tells you when this occurs ("Comments made on other branches: 2 from feature-x"). `:Review clear` removes these comments.
 
+The reviewed marks are in a second file next to the store. `q` and `:Review clear` remove them with the comments. `C` keeps them. A mark is for the exact contents of both sides of the diff. If one side changes, the mark no longer applies.
+
 `export = { clear_on_close = false }` keeps the comments after you close the review. Versions before 1.10 worked like this. The first time you run this version, review.nvim copies the old per-branch file of your current branch into the new store.
 
 ## Keybindings (in diff view)
@@ -141,13 +146,15 @@ The store is for each repository, not for each branch. Thus, comments from a dif
 |-----|--------|
 | `i` | Add a comment (pick the type from a menu) |
 | `F` | Add a comment on the whole file |
+| `r` | Mark the file as reviewed and go to the next unreviewed file (press again to remove the mark) |
 | `d` | Delete the comment at the cursor |
 | `e` | Edit the comment at the cursor |
 | `c` | List all comments |
 | `f` | Show or hide the file panel |
 | `R` | Toggle readonly and edit mode |
-| `<Tab>` | Next file |
-| `<S-Tab>` | Previous file |
+| `<Tab>` | Next unreviewed file |
+| `<S-Tab>` | Previous unreviewed file |
+| `]f` / `[f` | Next file and previous file, including reviewed files (from codediff) |
 | `]n` | Next comment |
 | `[n` | Previous comment |
 | `C` | Export to the clipboard and show a preview |
@@ -164,6 +171,7 @@ The store is for each repository, not for each branch. Thus, comments from a dif
 | `<localleader>cc` | Add a comment (pick the type from a menu) |
 | `<localleader>cn/cs/ci/cp` | Add a Note, Suggestion, Issue or Praise |
 | `<localleader>cf` | Add a comment on the whole file |
+| `<localleader>cr` | Mark the file as reviewed (press again to remove the mark) |
 | `<localleader>cd` | Delete the comment |
 | `<localleader>ce` | Edit the comment |
 
@@ -188,12 +196,13 @@ To disable a keymap, set it to `false`.
 | `add_issue` | `<localleader>ci` | Add an issue (edit mode) |
 | `add_praise` | `<localleader>cp` | Add a praise (edit mode) |
 | `add_file_comment` | `<localleader>cf` | Add a comment on the whole file (edit mode) |
+| `toggle_reviewed` | `<localleader>cr` | Mark the file as reviewed, or remove the mark (edit mode) |
 | `delete_comment` | `<localleader>cd` | Delete the comment (edit mode) |
 | `edit_comment` | `<localleader>ce` | Edit the comment (edit mode) |
 | `next_comment` | `]n` | Next comment |
 | `prev_comment` | `[n` | Previous comment |
-| `next_file` | `<Tab>` | Next file |
-| `prev_file` | `<S-Tab>` | Previous file |
+| `next_file` | `<Tab>` | Next unreviewed file |
+| `prev_file` | `<S-Tab>` | Previous unreviewed file |
 | `toggle_file_panel` | `f` | Show or hide the file panel |
 | `list_comments` | `c` | List all comments |
 | `export_clipboard` | `C` | Export to the clipboard |
@@ -204,6 +213,7 @@ To disable a keymap, set it to `false`.
 | `show_help` | `?` | Show the review.nvim help |
 | `readonly_add` | `i` | Add a comment (readonly mode) |
 | `readonly_add_file` | `F` | Add a comment on the whole file (readonly mode) |
+| `readonly_toggle_reviewed` | `r` | Mark the file as reviewed and go to the next unreviewed file, or remove the mark (readonly mode) |
 | `readonly_delete` | `d` | Delete the comment (readonly mode) |
 | `readonly_edit` | `e` | Edit the comment (readonly mode) |
 | `popup_submit` | `<C-s>` | Submit the comment (popup, insert mode and normal mode) |

@@ -129,6 +129,7 @@ function M._check_codediff_session()
 
   -- Set up keymaps (uses codediff's set_tab_keymap internally)
   keymaps.setup_keymaps(tabpage)
+  require("review.reviewed").attach(tabpage)
 end
 
 ---Comments made on another branch are still in the per-repo store; say so

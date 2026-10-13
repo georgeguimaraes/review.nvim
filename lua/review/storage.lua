@@ -60,6 +60,13 @@ function M.get_storage_path()
   return string.format("%s/%s.json", data_dir, h)
 end
 
+---Reviewed-file marks sit next to the comments, in their own file.
+---@return string|nil
+function M.reviewed_path()
+  local path = M.get_storage_path()
+  return path and (path:gsub("%.json$", ".reviewed.json"))
+end
+
 ---Where releases before the per-repo store kept the current branch's comments.
 ---@return string|nil
 function M.legacy_storage_path()
@@ -186,6 +193,29 @@ function M.clear()
   local path = M.get_storage_path()
   if path then
     os.remove(path)
+  end
+  local reviewed = M.reviewed_path()
+  if reviewed then
+    os.remove(reviewed)
+  end
+end
+
+---@return table<string, number> reviewed_at by mark key
+function M.load_reviewed()
+  local path = M.reviewed_path()
+  return path and read_json(path) or {}
+end
+
+---@param marks table<string, number>
+function M.save_reviewed(marks)
+  local path = M.reviewed_path()
+  if not path then
+    return
+  end
+  local file = io.open(path, "w")
+  if file then
+    file:write(vim.fn.json_encode(vim.tbl_isempty(marks) and vim.empty_dict() or marks))
+    file:close()
   end
 end
 
