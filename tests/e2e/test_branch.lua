@@ -117,6 +117,20 @@ local RECORD_CODEDIFF_ARGS = [[
   end
 ]]
 
+local function wait_for_base_picker(line_pattern)
+  E.wait_for(
+    string.format(
+      [[vim.api.nvim_win_get_config(0).relative ~= "" and vim.api.nvim_get_current_line():match(%q) ~= nil]],
+      line_pattern
+    ),
+    "base branch picker"
+  )
+end
+
+local function picker_lines()
+  return child.lua_get([[table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")]])
+end
+
 T["diffs the merge base of the configured base and the working tree"] = function()
   child.lua(RECORD_CODEDIFF_ARGS)
   child.cmd("Review branch feature")
@@ -124,9 +138,96 @@ T["diffs the merge base of the configured base and the working tree"] = function
   eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "main..." })
 end
 
+T["branch.pick_base opens a second picker and uses its selected base"] = function()
+  child.lua([[require("review.config").setup({ branch = { pick_base = true } })]])
+  child.lua(RECORD_CODEDIFF_ARGS)
+  child.cmd("Review branch")
+  E.wait_for([[vim.api.nvim_win_get_config(0).relative ~= ""]], "target branch picker")
+  expect_match(child.api.nvim_get_current_line(), "^feature %(current%)")
+
+  child.type_keys("<CR>")
+  wait_for_base_picker("^main")
+  expect_no_match(picker_lines(), "feature", true)
+
+  child.type_keys("<CR>")
+  E.wait_ready("api.lua")
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "main..." })
+end
+
+T["branch.pick_base can select a non-default base"] = function()
+  E.git(repo, "branch", "-q", "develop", "main~1")
+  child.lua([[require("review.config").setup({ branch = { pick_base = true } })]])
+  child.lua(RECORD_CODEDIFF_ARGS)
+  child.cmd("Review branch")
+  E.wait_for([[vim.api.nvim_win_get_config(0).relative ~= ""]], "target branch picker")
+  child.type_keys("<CR>")
+  wait_for_base_picker("^main")
+  child.lua([[
+    for i, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if line:match("^develop") then
+        vim.api.nvim_win_set_cursor(0, { i, 0 })
+        break
+      end
+    end
+  ]])
+  expect_match(child.api.nvim_get_current_line(), "^develop")
+
+  child.type_keys("<CR>")
+  E.wait_ready("api.lua")
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "develop..." })
+end
+
+T["branch.pick_base prefers a remote-only origin HEAD"] = function()
+  local remote = E.tempdir()
+  E.git(repo, "clone", "-q", "--bare", repo, remote)
+  E.git(remote, "branch", "trunk", "main")
+  E.git(repo, "remote", "add", "origin", remote)
+  E.git(repo, "fetch", "-q", "origin")
+  E.git(repo, "remote", "set-head", "origin", "trunk")
+  child.lua([[require("review.config").setup({ branch = { pick_base = true } })]])
+  child.lua(RECORD_CODEDIFF_ARGS)
+  child.cmd("Review branch")
+  E.wait_for([[vim.api.nvim_win_get_config(0).relative ~= ""]], "target branch picker")
+  child.type_keys("<CR>")
+  wait_for_base_picker("^origin/trunk")
+  child.type_keys("<CR>")
+
+  E.wait_ready("api.lua")
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "origin/trunk..." })
+  vim.fn.delete(remote, "rf")
+end
+
+T["cancelling the base picker does not open a review"] = function()
+  child.lua([[require("review.config").setup({ branch = { pick_base = true } })]])
+  child.lua(RECORD_CODEDIFF_ARGS)
+  child.cmd("Review branch")
+  E.wait_for([[vim.api.nvim_win_get_config(0).relative ~= ""]], "target branch picker")
+  child.type_keys("<CR>")
+  wait_for_base_picker("^main")
+  child.type_keys("q")
+  E.wait_for([[vim.api.nvim_win_get_config(0).relative == ""]], "base picker to close")
+
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), vim.NIL)
+  eq(child.api.nvim_get_current_tabpage(), 1)
+end
+
+T["branch.pick_base works without a conventional default branch"] = function()
+  E.git(repo, "branch", "-m", "main", "trunk")
+  child.lua([[require("review.config").setup({ branch = { pick_base = true } })]])
+  child.lua(RECORD_CODEDIFF_ARGS)
+  child.cmd("Review branch")
+  E.wait_for([[vim.api.nvim_win_get_config(0).relative ~= ""]], "target branch picker")
+  child.type_keys("<CR>")
+  wait_for_base_picker("^trunk")
+  child.type_keys("<CR>")
+
+  E.wait_ready("api.lua")
+  eq(child.lua_get([[_G.CODEDIFF_ARGS]]), { "trunk..." })
+end
+
 T["honours branch.base from config"] = function()
   E.git(repo, "branch", "-q", "develop", "main~1")
-  child.lua([[require("review.config").setup({ branch = { base = "develop" } })]])
+  child.lua([[require("review.config").setup({ branch = { base = "develop", pick_base = true } })]])
   child.lua(RECORD_CODEDIFF_ARGS)
   child.cmd("Review branch feature")
   E.wait_ready("api.lua")

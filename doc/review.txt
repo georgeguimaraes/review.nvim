@@ -29,6 +29,7 @@ Features:
 - Comments persist per branch across sessions
 - Export format optimized for AI conversations
 - Commit picker to review specific revision ranges
+- Branch picker with optional interactive base selection
 - Readonly and edit modes with separate keymap sets
 
 ==============================================================================
@@ -56,6 +57,17 @@ All commands use the `:Review` prefix.
 :Review commits {rev1} {rev2}
                             Review a specific revision range directly,
                             skipping the picker.
+
+                                                              *:Review-branch*
+:Review branch              Pick a target branch to review. By default its
+                            base is resolved automatically. When
+                            `branch.pick_base` is true, a second picker opens
+                            for the base branch.
+
+:Review branch {target} [{base}]
+                            Review a branch directly, skipping all pickers.
+                            When {base} is omitted, use `branch.base` or the
+                            detected default.
 
                                                                *:Review-close*
 :Review close               Export comments to clipboard and close the
@@ -122,6 +134,11 @@ All fields are optional; defaults are shown.
         readonly = true,
       },
 
+      branch = {
+        base = nil,
+        pick_base = false,
+      },
+
       keymaps = { ... },  -- see |review-keymaps|
     })
 <
@@ -131,6 +148,18 @@ codediff.readonly ~
     When true (default), diff buffers are readonly and simple single-key
     keymaps are active (e.g. `i` to add comment). When false, leader-based
     keymaps are used instead. Toggle at runtime with `R`.
+
+                                                       *review-config-branch*
+branch.base ~
+    Automatic base used by `:Review branch` when it is not supplied. It is
+    also initially highlighted in the base picker. When nil (default), use
+    `origin/HEAD`, then `main` or `master`.
+
+branch.pick_base ~
+    When true, the no-argument `:Review branch` command opens a base picker
+    after the target picker. `branch.base`, or the detected default, is
+    initially highlighted. Defaults to false. Commands that supply {target}
+    remain non-interactive.
 
 ==============================================================================
 5. KEYMAPS                                                   *review-keymaps*

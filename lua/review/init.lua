@@ -220,7 +220,7 @@ local function ref_exists(ref)
 end
 
 ---The branch a review is compared against: config.branch.base when set,
----else main or master, whichever exists (origin/HEAD breaks a tie).
+---else origin/HEAD, main, or master, whichever exists first.
 ---@return string|nil
 local function default_base()
   local configured = config.get().branch.base
@@ -228,11 +228,8 @@ local function default_base()
     return configured
   end
   local origin_head = vim.fn.systemlist({ "git", "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD" })[1]
-  if vim.v.shell_error == 0 and origin_head then
-    local name = origin_head:gsub("^origin/", "")
-    if ref_exists(name) then
-      return name
-    end
+  if vim.v.shell_error == 0 and origin_head and ref_exists(origin_head) then
+    return origin_head
   end
   for _, name in ipairs({ "main", "master" }) do
     if ref_exists(name) then
@@ -246,31 +243,47 @@ end
 ---diff is `base...` (merge base vs working tree, so uncommitted work counts);
 ---with any other branch it's `base...target`, no checkout needed. Comments are
 ---stored per (base, target) pair, so they survive new commits.
----@param target? string branch to review; opens a picker when omitted
----@param base? string defaults to config.branch.base, main or master
+---@param target? string branch to review; opens the configured picker flow when omitted
+---@param base? string direct-invocation base; defaults to config.branch.base, main, or master
 function M.open_branch(target, base)
-  local function open(chosen)
-    base = base or default_base()
-    if not base then
+  local function open(chosen, chosen_base)
+    local resolved_base = chosen_base or default_base()
+    if not resolved_base then
       vim.notify("No base branch found (set branch.base or create main/master)", vim.log.levels.WARN, { title = "review.nvim" })
       return
     end
-    if chosen == base then
-      vim.notify("Target and base are both " .. base, vim.log.levels.WARN, { title = "review.nvim" })
+    if chosen == resolved_base then
+      vim.notify("Target and base are both " .. resolved_base, vim.log.levels.WARN, { title = "review.nvim" })
       return
     end
-    local arg = is_current_branch(chosen) and (base .. "...") or (base .. "..." .. chosen)
+    local arg = is_current_branch(chosen) and (resolved_base .. "...") or (resolved_base .. "..." .. chosen)
     open_codediff({ args = { arg } })
   end
 
   if target then
-    open(target)
+    open(target, base)
     return
   end
-  require("review.picker").open_branches(function(chosen)
-    if chosen then
-      open(chosen)
+
+  local picker = require("review.picker")
+  picker.open_branches(function(chosen)
+    if not chosen then
+      return
     end
+    if not config.get().branch.pick_base then
+      open(chosen)
+      return
+    end
+
+    picker.open_branches(function(chosen_base)
+      if chosen_base then
+        open(chosen, chosen_base)
+      end
+    end, {
+      title = "Select base branch",
+      exclude = chosen,
+      preferred = default_base(),
+    })
   end)
 end
 
