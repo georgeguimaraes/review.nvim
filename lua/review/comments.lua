@@ -4,6 +4,7 @@ local store = require("review.store")
 local hooks = require("review.hooks")
 local popup = require("review.popup")
 local marks = require("review.marks")
+local utils = require("review.utils")
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = "review.nvim" })
@@ -248,23 +249,41 @@ function M.list()
 
     local comment = choice.comment
 
-    -- Try to navigate to the file in codediff explorer
-    local tabpage = hooks.get_current_tabpage()
-    local explorer = tabpage and hooks.get_explorer(tabpage)
+    -- In a review, open the file through the explorer. Elsewhere (notes on
+    -- any file), edit it directly.
+    local explorer = hooks.get_explorer(vim.api.nvim_get_current_tabpage())
     if explorer then
-      local explorer_mod = require("codediff.ui.explorer")
-      -- Find and select the file in explorer
-      -- This is a best-effort navigation
-      for i, node in ipairs(explorer.tree:get_nodes()) do
-        if node.path == comment.file then
-          explorer_mod.select_node(explorer, node)
+      local file_data
+      for _, node in ipairs(require("codediff.ui.explorer.tree").get_all_files(explorer.tree)) do
+        if node.data.path == comment.file then
+          file_data = node.data
           break
         end
       end
+      if not file_data then
+        notify("Not in this review's file list: " .. comment.file, vim.log.levels.WARN)
+        return
+      end
+      explorer.on_file_select(file_data)
+    else
+      local root = utils.git_root()
+      if not root then
+        notify("Not in a git repository", vim.log.levels.WARN)
+        return
+      end
+      vim.cmd.edit(vim.fn.fnameescape(root .. "/" .. comment.file))
     end
 
-    -- Jump to line after a short delay (line 1 for file-level comments)
+    -- Jump to line after a short delay (line 1 for file-level comments). In a
+    -- review, jump in the pane of the comment's side.
     vim.defer_fn(function()
+      if explorer then
+        local original_win, modified_win = require("codediff.ui.lifecycle").get_windows(vim.api.nvim_get_current_tabpage())
+        local win = comment.side == "old" and original_win or modified_win
+        if win and vim.api.nvim_win_is_valid(win) then
+          vim.api.nvim_set_current_win(win)
+        end
+      end
       local target_line = comment.line == 0 and 1 or comment.line
       pcall(vim.api.nvim_win_set_cursor, 0, { target_line, 0 })
     end, 100)

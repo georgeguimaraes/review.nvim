@@ -10,6 +10,7 @@ local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
       store.clear()
+      config.setup()
     end,
   },
 })
@@ -25,9 +26,26 @@ T["generate_markdown"]["includes file and comment in output"] = function()
   store.add("src/main.lua", 10, "issue", "Fix this bug")
 
   local md = export.generate_markdown()
+  local default_header = table.concat({
+    "I reviewed your code and have the following comments. Please address them.",
+    "",
+    "Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)",
+    "Lines prefixed with ~ refer to the old (left) side of the diff.",
+  }, "\n")
+  eq(md:sub(1, #default_header), default_header)
   expect_match(md, "src/main.lua:10")
   expect_match(md, "%[ISSUE%]")
   expect_match(md, "Fix this bug")
+end
+
+T["generate_markdown"]["uses the configured export header"] = function()
+  config.setup({ export = { header = "Review feedback:\nAct on each item." } })
+  store.add("src/main.lua", 10, "issue", "Fix this bug")
+
+  local md = export.generate_markdown()
+  expect_match(md, "^Review feedback:\nAct on each item%.\n\n1%.")
+  expect_no_match(md, "Comment types:")
+  expect_no_match(md, "Lines prefixed with")
 end
 
 T["generate_markdown"]["formats comments as numbered list"] = function()
