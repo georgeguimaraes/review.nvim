@@ -80,8 +80,8 @@ All commands start with `:Review`.
                             comments.
 
                                                               *:Review-export*
-:Review export              Export the comments (to the clipboard and to
-                            `export.on_export`) and open a preview split.
+:Review export              Export the comments to the targets in
+                            |review-config-export| and open a preview split.
 
                                                              *:Review-preview*
 :Review preview             Show the export in a vertical split.
@@ -92,8 +92,10 @@ All commands start with `:Review`.
                                                                 *:Review-list*
 :Review list                Show all comments in a picker. In a review, the
                             comment that you pick opens in the diff, at its
-                            line, in the pane of its side. Outside a review,
-                            the file of the comment opens at its line.
+                            line, in the pane of its side. If the file is
+                            not in the review, review.nvim shows a warning.
+                            Outside a review, the file of the comment opens
+                            at its line.
 
                                                                *:Review-clear*
 :Review clear               Archive and clear all comments.
@@ -162,7 +164,7 @@ are optional. The example shows the default values.
       },
 
       export = {
-        header = "...",  -- see |review-config-export|
+        -- header: four lines, see |review-config-export|
         clipboard = true,
         on_export = nil,
         clear_on_close = true,

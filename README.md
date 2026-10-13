@@ -132,7 +132,7 @@ review.nvim keeps one comment store for each repository, in `~/.local/share/nvim
 
 The store is for each repository, not for each branch. Thus, comments from a different branch stay in the store when you open a review on your branch. review.nvim tells you when this occurs ("Comments made on other branches: 2 from feature-x"). `:Review clear` removes these comments.
 
-`export = { clear_on_close = false }` keeps the comments after you close the review. Versions before 1.10 worked like this. The first time you run this version, review.nvim moves the old per-branch file of your current branch into the new store.
+`export = { clear_on_close = false }` keeps the comments after you close the review. Versions before 1.10 worked like this. The first time you run this version, review.nvim copies the old per-branch file of your current branch into the new store.
 
 ## Keybindings (in diff view)
 
