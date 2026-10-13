@@ -199,9 +199,13 @@ function M.clear()
   if path then
     os.remove(path)
   end
-  local reviewed = M.reviewed_path()
-  if reviewed then
-    os.remove(reviewed)
+  M.clear_reviewed()
+end
+
+function M.clear_reviewed()
+  local path = M.reviewed_path()
+  if path then
+    os.remove(path)
   end
 end
 

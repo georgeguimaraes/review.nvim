@@ -139,6 +139,18 @@ T["r on the last file says all files are reviewed, and :Review clear drops the m
   E.wait_for([[vim.fn.execute("messages"):find("Reviewed marks cleared", 1, true) ~= nil]], "clear message")
 end
 
+T["q clears the marks even with no comments to export"] = function()
+  open_review()
+  child.type_keys("r")
+  E.wait_ready("b.lua")
+  child.type_keys("q")
+  E.wait_for([[vim.fn.tabpagenr("$") == 1]], "review closed")
+  eq(child.lua_get([[vim.tbl_count(require("review.storage").load_reviewed())]]), 0)
+
+  open_review()
+  eq(reviewed_rows(), "")
+end
+
 T["marks persist across restarts"] = function()
   open_review()
   child.type_keys("r")

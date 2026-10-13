@@ -312,10 +312,16 @@ function M.close()
   vim.cmd("tabclose")
   hooks.on_session_closed()
 
-  if markdown and config.get().export.clear_on_close ~= false then
-    store.archive_and_clear()
-    require("review.marks").clear_all()
-    message = message .. ", archived and cleared"
+  if config.get().export.clear_on_close ~= false then
+    if markdown then
+      store.archive_and_clear()
+      require("review.marks").clear_all()
+      message = message .. ", archived and cleared"
+    else
+      -- Nothing to export, but the round still ends: drop the reviewed marks
+      storage.clear_reviewed()
+      require("review.reviewed").reset()
+    end
   end
   if message then
     vim.notify(message, vim.log.levels.INFO, { title = "review.nvim" })
