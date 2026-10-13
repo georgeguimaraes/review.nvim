@@ -149,6 +149,8 @@ function M.open(initial_type, initial_text, callback)
 
   -- Focus the text popup and enter insert mode
   vim.api.nvim_set_current_win(text_popup.winid)
+  -- Set after focusing so FileType autocmds (setlocal spell...) apply to this window
+  vim.bo[text_popup.bufnr].filetype = "markdown"
   vim.cmd("startinsert")
 
   local km = cfg.keymaps
