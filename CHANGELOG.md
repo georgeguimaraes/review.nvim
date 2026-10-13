@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.11.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.10.1...v1.11.0) (2026-10-13)
+
+
+### Features
+
+* Add optional interactive base branch picker ([#56](https://github.com/georgeguimaraes/review.nvim/issues/56)) ([e3018c3](https://github.com/georgeguimaraes/review.nvim/commit/e3018c3f0b0565eac1fdc80b14e60935a4c28630))
+* Make review header configurable ([#52](https://github.com/georgeguimaraes/review.nvim/issues/52)) ([7aed6c4](https://github.com/georgeguimaraes/review.nvim/commit/7aed6c4a84916bf416068fe4da89d6dd8c1706fa))
+* Set the markdown filetype on the comment box ([#57](https://github.com/georgeguimaraes/review.nvim/issues/57)) ([d9eb26e](https://github.com/georgeguimaraes/review.nvim/commit/d9eb26e9670323d2207271099821d5ae891d9007)), closes [#53](https://github.com/georgeguimaraes/review.nvim/issues/53)
+
+
+### Bug Fixes
+
+* **comments:** file navigation ([#54](https://github.com/georgeguimaraes/review.nvim/issues/54)) ([b677c15](https://github.com/georgeguimaraes/review.nvim/commit/b677c1520fcbc9df070f86bc47934f1937bab045))
+
+
+### Documentation
+
+* Record the demo gifs in Victor Mono ([f72a347](https://github.com/georgeguimaraes/review.nvim/commit/f72a347538913ac558d2440dd3899426a2dd85ae))
+* Update the README and help for 1.11 ([#58](https://github.com/georgeguimaraes/review.nvim/issues/58)) ([5d2a0b0](https://github.com/georgeguimaraes/review.nvim/commit/5d2a0b0a969ae19e8fc639888ed7ec5d3e4a2b05))
+
 ## [1.10.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.10.0...v1.10.1) (2026-09-17)
 
 
