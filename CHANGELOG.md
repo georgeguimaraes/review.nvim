@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.11.0...v1.12.0) (2026-10-13)
+
+
+### Features
+
+* Mark files as reviewed ([#59](https://github.com/georgeguimaraes/review.nvim/issues/59)) ([f0cd307](https://github.com/georgeguimaraes/review.nvim/commit/f0cd30711ac9ed29c628668cf4052ba698b7c5c5)), closes [#55](https://github.com/georgeguimaraes/review.nvim/issues/55)
+
 ## [1.11.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.10.1...v1.11.0) (2026-10-13)
 
 
