@@ -217,4 +217,46 @@ T["archive_and_clear"]["empties the store and archives what was there"] = functi
   vim.fn.delete(storage.archive_dir(), "rf")
 end
 
+T["external writes"] = MiniTest.new_set()
+
+-- What another writer (a second Neovim, a tool sharing the file) leaves on
+-- disk after this session loaded: a comment the in-memory store never saw.
+local function write_external(comment)
+  local storage = require("review.storage")
+  local on_disk = storage.load()
+  on_disk[comment.file] = on_disk[comment.file] or {}
+  table.insert(on_disk[comment.file], comment)
+  storage.save(on_disk)
+end
+
+local function texts_on_disk(file)
+  local texts = {}
+  for _, comment in ipairs(require("review.storage").load()[file] or {}) do
+    table.insert(texts, comment.text)
+  end
+  return texts
+end
+
+T["external writes"]["survive a change made here"] = function()
+  store.add("a.lua", 1, "note", "mine")
+  write_external({ id = "external_1", file = "b.lua", line = 2, side = "new", type = "issue", text = "theirs" })
+
+  store.add("a.lua", 3, "note", "mine too")
+
+  eq({ "theirs" }, texts_on_disk("b.lua"))
+  eq({ "mine", "mine too" }, texts_on_disk("a.lua"))
+  eq(3, store.count())
+end
+
+T["external writes"]["a comment deleted here is not brought back"] = function()
+  local mine = store.add("a.lua", 1, "note", "mine")
+  write_external({ id = "external_1", file = "b.lua", line = 2, side = "new", type = "issue", text = "theirs" })
+
+  store.delete(mine.id)
+
+  eq(nil, store.get(mine.id))
+  eq({}, texts_on_disk("a.lua"))
+  eq({ "theirs" }, texts_on_disk("b.lua"))
+end
+
 return T
