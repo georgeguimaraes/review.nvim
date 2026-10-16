@@ -259,4 +259,24 @@ T["external writes"]["a comment deleted here is not brought back"] = function()
   eq({ "theirs" }, texts_on_disk("b.lua"))
 end
 
+T["ids"] = MiniTest.new_set()
+
+T["ids"]["carry the process id, so two sessions never mint the same one"] = function()
+  local comment = store.add("a.lua", 1, "note", "mine")
+
+  neq(comment.id:match("^comment_%d+_%d+_" .. vim.uv.os_getpid() .. "$"), nil)
+end
+
+T["ids"]["the counter resumes after ids that carry a process id"] = function()
+  require("review.storage").save({
+    ["a.lua"] = { { id = "comment_100_7_4242", file = "a.lua", line = 1, side = "new", type = "note", text = "old" } },
+  })
+  store.reset()
+  store.load()
+
+  local comment = store.add("a.lua", 2, "note", "new")
+
+  neq(comment.id:match("^comment_%d+_8_%d+$"), nil)
+end
+
 return T

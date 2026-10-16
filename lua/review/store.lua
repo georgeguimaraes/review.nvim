@@ -21,10 +21,13 @@ local loaded = false
 -- Ids deleted since load, so a merge in persist() does not bring them back
 local deleted = {}
 
+---Unique across Neovims sharing the file: two that loaded the same comments
+---resume from the same counter, so the process id tells their ids apart. The
+---counter stays second, where load() reads it back.
 ---@return string
 local function generate_id()
   id_counter = id_counter + 1
-  return string.format("comment_%d_%d", os.time(), id_counter)
+  return string.format("comment_%d_%d_%d", os.time(), id_counter, vim.uv.os_getpid())
 end
 
 -- Another writer (a second Neovim, or a tool sharing the file) may have saved
