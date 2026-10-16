@@ -18,14 +18,43 @@ M.comments = {}
 
 local id_counter = 0
 local loaded = false
+-- Ids deleted since load, so a merge in persist() does not bring them back
+local deleted = {}
 
+---Unique across Neovims sharing the file: two that loaded the same comments
+---resume from the same counter, so the process id tells their ids apart. The
+---counter stays second, where load() reads it back.
 ---@return string
 local function generate_id()
   id_counter = id_counter + 1
-  return string.format("comment_%d_%d", os.time(), id_counter)
+  return string.format("comment_%d_%d_%d", os.time(), id_counter, vim.uv.os_getpid())
+end
+
+-- Another writer (a second Neovim, or a tool sharing the file) may have saved
+-- since load. Keep what it added: comments on disk that are neither in memory
+-- nor deleted here join the in-memory store before it is written back.
+local function merge_from_disk()
+  local known = {}
+  for _, comments in pairs(M.comments) do
+    for _, comment in ipairs(comments) do
+      known[comment.id] = true
+    end
+  end
+  for file, comments in pairs(storage.load()) do
+    if type(comments) == "table" then
+      for _, comment in ipairs(comments) do
+        if type(comment) == "table" and comment.id and not known[comment.id] and not deleted[comment.id] then
+          M.comments[file] = M.comments[file] or {}
+          table.insert(M.comments[file], comment)
+          known[comment.id] = true
+        end
+      end
+    end
+  end
 end
 
 local function persist()
+  merge_from_disk()
   storage.save(M.comments)
 end
 
@@ -33,6 +62,7 @@ function M.reset()
   M.comments = {}
   id_counter = 0
   loaded = false
+  deleted = {}
 end
 
 function M.load()
@@ -200,6 +230,7 @@ function M.delete(id)
   for file, comments in pairs(M.comments) do
     for i, comment in ipairs(comments) do
       if comment.id == id then
+        deleted[id] = true
         table.remove(comments, i)
         if #comments == 0 then
           M.comments[file] = nil
