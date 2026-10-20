@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/georgeguimaraes/review.nvim/compare/v1.12.0...v1.12.1) (2026-10-20)
+
+
+### Miscellaneous
+
+* **ci:** Pin GitHub Actions to commit SHAs ([0a379fa](https://github.com/georgeguimaraes/review.nvim/commit/0a379fae01709645956005f76c4650b7740931a3))
+
 ## [1.12.0](https://github.com/georgeguimaraes/review.nvim/compare/v1.11.0...v1.12.0) (2026-10-13)
 
 
