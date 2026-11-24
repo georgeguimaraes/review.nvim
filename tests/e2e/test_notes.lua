@@ -86,6 +86,31 @@ T["renders notes when the file is opened again"] = function()
   E.wait_for([[#vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("review"), 0, -1, {}) >= 1]], "note re-rendered")
 end
 
+T["wraps a long note again when its window gets narrower"] = function()
+  local box_height = [[(function()
+    local marks = vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("review"), 0, -1, { details = true })
+    return marks[1] and #marks[1][4].virt_lines or 0
+  end)()]]
+  child.cmd("edit api.lua")
+  child.type_keys("3G")
+  add_note_here(vim.trim(string.rep("long ", 50)))
+  E.wait_for(box_height .. " > 0", "note rendered")
+  local wide = child.lua_get(box_height)
+  child.cmd("vsplit")
+  child.cmd("vertical resize 50")
+  E.wait_for(box_height .. " > " .. wide, "note wrapped to the narrower window")
+end
+
+T["a resize draws saved notes before the store is loaded"] = function()
+  child.cmd("edit api.lua")
+  child.type_keys("3G")
+  add_note_here("saved note")
+  child.lua([[require("review.marks").clear_all(); require("review.store").reset()]])
+  eq(extmark_count(), 0)
+  child.o.columns = 120
+  E.wait_for([[#vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("review"), 0, -1, {}) >= 1]], "note drawn on resize")
+end
+
 T["notes appear in the review and in the export"] = function()
   child.cmd("edit api.lua")
   child.type_keys("4G")

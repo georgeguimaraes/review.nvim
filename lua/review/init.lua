@@ -81,12 +81,38 @@ function M.setup(opts)
     end,
   })
 
+  -- A read (or :edit!) puts the file's text back, so notes go back to the stored lines
+  vim.api.nvim_create_autocmd("BufReadPost", {
+    group = augroup,
+    callback = function(ev)
+      require("review.marks").forget_positions(ev.buf)
+    end,
+  })
+
   -- Edits move the marks; on write, move the stored lines with them
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = augroup,
     callback = function(ev)
       if hooks.plain_buffer_file(ev.buf) then
         require("review.marks").sync_positions(ev.buf)
+      end
+    end,
+  })
+
+  -- Comment boxes wrap to the window width: draw them again when it changes
+  vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
+    group = augroup,
+    callback = function()
+      local marks = require("review.marks")
+      marks.refresh()
+      local orig_buf, mod_buf = hooks.get_buffers()
+      store.load()
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local file = hooks.plain_buffer_file(buf)
+        if file and buf ~= orig_buf and buf ~= mod_buf and #store.get_for_file(file) > 0 then
+          marks.render_for_buffer(buf, "new", file)
+        end
       end
     end,
   })

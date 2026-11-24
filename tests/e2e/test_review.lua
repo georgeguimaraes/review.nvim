@@ -274,4 +274,29 @@ T["exports to clipboard and closes"] = function()
   expect_match(table.concat(vim.fn.readfile(archived[1]), "\n"), "pcall around decode", true)
 end
 
+T["wraps a file comment to the same height in both panes"] = function()
+  local heights = [[(function()
+    local ns = vim.api.nvim_create_namespace("review")
+    local out = {}
+    for _, buf in ipairs({ require("codediff.ui.lifecycle").get_buffers(vim.api.nvim_get_current_tabpage()) }) do
+      local mark = vim.api.nvim_buf_get_extmarks(buf, ns, 0, 0, { details = true })[1]
+      table.insert(out, mark and #mark[4].virt_lines or 0)
+    end
+    return out
+  end)()]]
+  open_review()
+  child.type_keys("F")
+  wait_for(IN_POPUP, "comment popup")
+  child.type_keys(vim.trim(string.rep("this file needs a closer look ", 12)), "<C-s>")
+  wait_for([[require("review.store").count() == 1]], "comment stored")
+  wait_for(BACK_IN_DIFF, "focus back in diff")
+  wait_for(heights .. "[1] > 0", "file comment rendered")
+  local wide = child.lua_get(heights)[1]
+
+  child.lua([[vim.api.nvim_win_set_width(require("codediff.ui.lifecycle").get_windows(vim.api.nvim_get_current_tabpage()), 40)]])
+  wait_for(heights .. "[1] > " .. wide, "file comment wrapped to the narrower pane")
+  local narrow = child.lua_get(heights)
+  eq(narrow[1], narrow[2])
+end
+
 return T
