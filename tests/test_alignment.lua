@@ -170,6 +170,36 @@ T["align_buffers"]["does not add padding for file comments (they render on both 
   eq(0, #mod_padding)
 end
 
+T["align_buffers"]["pads by the wrapped height of a long comment"] = function()
+  vim.api.nvim_win_set_buf(vim.api.nvim_get_current_win(), mod_buf)
+  store.add("test.lua", 3, "issue", string.rep("word ", 60), nil, "new")
+
+  marks.render_for_buffer(orig_buf, "old", "test.lua")
+  marks.render_for_buffer(mod_buf, "new", "test.lua")
+  marks.align_buffers(orig_buf, mod_buf, "test.lua", "test.lua")
+
+  local ns_id = vim.api.nvim_create_namespace("review")
+  local box = vim.api.nvim_buf_get_extmarks(mod_buf, ns_id, 0, -1, { details = true })[1][4].virt_lines
+  local orig_padding = vim.api.nvim_buf_get_extmarks(orig_buf, ns_padding, 0, -1, { details = true })
+  eq(#box > 3, true)
+  eq(1, #orig_padding)
+  eq(#box, #orig_padding[1][4].virt_lines)
+end
+
+T["align_buffers"]["pads at the row a comment moved to with unsaved edits"] = function()
+  store.add("test.lua", 3, "issue", "Fix this", nil, "new")
+  marks.render_for_buffer(mod_buf, "new", "test.lua")
+
+  vim.api.nvim_buf_set_lines(mod_buf, 0, 0, false, { "added", "added" })
+  marks.render_for_buffer(orig_buf, "old", "test.lua")
+  marks.render_for_buffer(mod_buf, "new", "test.lua")
+  marks.align_buffers(orig_buf, mod_buf, "test.lua", "test.lua")
+
+  local orig_padding = vim.api.nvim_buf_get_extmarks(orig_buf, ns_padding, 0, -1, {})
+  eq(1, #orig_padding)
+  eq(4, orig_padding[1][2])
+end
+
 T["topfill for file comments"] = MiniTest.new_set()
 
 T["topfill for file comments"]["sets topfill on windows displaying the buffer"] = function()

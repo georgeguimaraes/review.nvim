@@ -7,13 +7,84 @@ local normalize_path = require("review.utils").normalize_path
 local ns_id = vim.api.nvim_create_namespace("review")
 local ns_padding = vim.api.nvim_create_namespace("review_padding")
 
+---@param line string
+---@param width number
+---@return string[] pieces no wider than width, broken at spaces where possible
+local function wrap_line(line, width)
+  if vim.fn.strdisplaywidth(line) <= width then
+    return { line }
+  end
+  local pieces = {}
+  local current = ""
+  for token in line:gmatch("%s*%S+") do
+    local candidate = current .. token
+    if current ~= "" and vim.fn.strdisplaywidth(candidate) > width then
+      table.insert(pieces, current)
+      candidate = token:gsub("^%s+", "")
+    end
+    while vim.fn.strdisplaywidth(candidate) > width do
+      local chars = 1
+      while vim.fn.strdisplaywidth(vim.fn.strcharpart(candidate, 0, chars + 1)) <= width do
+        chars = chars + 1
+      end
+      table.insert(pieces, vim.fn.strcharpart(candidate, 0, chars))
+      candidate = vim.fn.strcharpart(candidate, chars)
+    end
+    current = candidate
+  end
+  table.insert(pieces, current)
+  return pieces
+end
+
+---@param text string
+---@param width number|nil wrap width, nil to keep each line whole
+---@return string[]
+local function comment_lines(text, width)
+  local lines = vim.split(text, "\n")
+  if not width then
+    return lines
+  end
+  local wrapped = {}
+  for _, line in ipairs(lines) do
+    vim.list_extend(wrapped, wrap_line(line, width))
+  end
+  return wrapped
+end
+
+---The text width that fits a comment box in every window showing the buffer.
+---In a review, both panes count, so they wrap file comments to the same height.
+---@param bufnr number
+---@return number|nil width, nil when no window shows the buffer
+local function text_width(bufnr)
+  local bufs = { bufnr }
+  local ok, hooks = pcall(require, "review.hooks")
+  if ok then
+    local orig_buf, mod_buf = hooks.get_buffers()
+    if orig_buf and mod_buf and (bufnr == orig_buf or bufnr == mod_buf) then
+      bufs = { orig_buf, mod_buf }
+    end
+  end
+  local width
+  for _, buf in ipairs(bufs) do
+    for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+      local info = vim.fn.getwininfo(win)[1]
+      -- An "auto" sign column can open for the comment's own sign after this is measured
+      local sign_width = vim.wo[win].signcolumn:match("^auto") and 2 or 0
+      local available = info.width - info.textoff - sign_width - 4
+      width = width and math.min(width, available) or available
+    end
+  end
+  return width and math.max(width, 20)
+end
+
 ---@param text string
 ---@param type_name string
 ---@param hl string
+---@param width number|nil
 ---@return table[] virt_lines
-local function build_comment_box(text, type_name, hl)
+local function build_comment_box(text, type_name, hl, width)
   local virt_lines = {}
-  local text_lines = vim.split(text, "\n")
+  local text_lines = comment_lines(text, width)
 
   local max_text_width = 0
   for _, text_line in ipairs(text_lines) do
@@ -39,6 +110,27 @@ end
 ---@param file_override? string file path to use directly instead of parsing buffer name
 ---@type table<number, table<string, {start: number, stop: number|nil}>> extmark ids by buffer and comment id
 local tracked = {}
+
+---The rows the buffer's marks are on now. Marks move with edits, so until
+---the buffer is written these can differ from the stored lines.
+---@param bufnr number
+---@return table<string, {line: number, line_end: number|nil}> rows by comment id
+local function current_rows(bufnr)
+  local rows = {}
+  for comment_id, ids in pairs(tracked[bufnr] or {}) do
+    local start = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns_id, ids.start, {})
+    local stop = ids.stop and vim.api.nvim_buf_get_extmark_by_id(bufnr, ns_id, ids.stop, {}) or nil
+    if start and start[1] then
+      local line = start[1] + 1
+      local line_end = (stop and stop[1]) and (stop[1] + 1) or nil
+      if line_end and line_end <= line then
+        line_end = nil
+      end
+      rows[comment_id] = { line = line, line_end = line_end }
+    end
+  end
+  return rows
+end
 
 function M.render_for_buffer(bufnr, side, file_override)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
@@ -70,10 +162,12 @@ function M.render_for_buffer(bufnr, side, file_override)
 
   local comments = store.get_for_file(file, side)
 
+  local rows = current_rows(bufnr)
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
   tracked[bufnr] = {}
 
   local cfg = config.get()
+  local width = text_width(bufnr)
 
   for _, comment in ipairs(comments) do
     local type_info = cfg.comment_types[comment.type]
@@ -81,7 +175,7 @@ function M.render_for_buffer(bufnr, side, file_override)
     local hl = type_info and type_info.hl or "ReviewSign"
     local line_hl = type_info and type_info.line_hl
     local name = type_info and type_info.name or comment.type
-    local virt_lines = build_comment_box(comment.text, name, hl)
+    local virt_lines = build_comment_box(comment.text, name, hl, width)
 
     if comment.line == 0 then
       pcall(vim.api.nvim_buf_set_extmark, bufnr, ns_id, 0, 0, {
@@ -104,8 +198,12 @@ function M.render_for_buffer(bufnr, side, file_override)
         end
       end
     else
-      local line_start = comment.line - 1
-      local line_end_0 = (comment.line_end or comment.line) - 1
+      local line, line_end = comment.line, comment.line_end
+      if rows[comment.id] then
+        line, line_end = rows[comment.id].line, rows[comment.id].line_end
+      end
+      local line_start = line - 1
+      local line_end_0 = (line_end or line) - 1
       local is_range = line_end_0 ~= line_start
 
       if line_start >= 0 then
@@ -149,9 +247,10 @@ end
 
 ---Calculate the height of a comment's virtual line box
 ---@param comment table
+---@param width number|nil
 ---@return number height, number attach_line (0-indexed)
-local function comment_box_height(comment)
-  local text_lines = vim.split(comment.text, "\n")
+local function comment_box_height(comment, width)
+  local text_lines = comment_lines(comment.text, width)
   local height = #text_lines + 2 -- top border + content + bottom border
   local attach_line
   if comment.line == 0 then
@@ -184,20 +283,26 @@ function M.align_buffers(orig_buf, mod_buf, orig_file, mod_file)
 
   -- Build height maps: attach_line -> total virt_line height per side
   -- Skip file comments (line 0) since they render identically on both sides
-  local function build_height_map(file, side)
+  local function build_height_map(file, side, bufnr)
     if not file then return {} end
+    local width = text_width(bufnr)
+    local rows = current_rows(bufnr)
     local map = {}
     for _, comment in ipairs(store.get_for_file(file, side)) do
       if comment.line ~= 0 and (comment.side or "new") == side then
-        local height, attach_line = comment_box_height(comment)
+        local height, attach_line = comment_box_height(comment, width)
+        local row = rows[comment.id]
+        if row then
+          attach_line = (row.line_end or row.line) - 1
+        end
         map[attach_line] = (map[attach_line] or 0) + height
       end
     end
     return map
   end
 
-  local old_map = build_height_map(orig_file, "old")
-  local new_map = build_height_map(mod_file, "new")
+  local old_map = build_height_map(orig_file, "old", orig_buf)
+  local new_map = build_height_map(mod_file, "new", mod_buf)
 
   local all_lines = {}
   for line in pairs(old_map) do all_lines[line] = true end
@@ -260,30 +365,25 @@ end
 ---@param bufnr number
 ---@return number moved
 function M.sync_positions(bufnr)
-  local marks_for_buf = tracked[bufnr]
-  if not marks_for_buf or not vim.api.nvim_buf_is_valid(bufnr) then
+  if not tracked[bufnr] or not vim.api.nvim_buf_is_valid(bufnr) then
     return 0
   end
   local moved = 0
-  for comment_id, ids in pairs(marks_for_buf) do
+  for comment_id, row in pairs(current_rows(bufnr)) do
     local comment = store.get(comment_id)
-    if comment and comment.line > 0 then
-      local start = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns_id, ids.start, {})
-      local stop = ids.stop and vim.api.nvim_buf_get_extmark_by_id(bufnr, ns_id, ids.stop, {}) or nil
-      if start and start[1] then
-        local line = start[1] + 1
-        local line_end = (stop and stop[1]) and (stop[1] + 1) or nil
-        if line_end and line_end <= line then
-          line_end = nil
-        end
-        if line ~= comment.line or line_end ~= comment.line_end then
-          store.move(comment_id, line, line_end)
-          moved = moved + 1
-        end
-      end
+    if comment and comment.line > 0 and (row.line ~= comment.line or row.line_end ~= comment.line_end) then
+      store.move(comment_id, row.line, row.line_end)
+      moved = moved + 1
     end
   end
   return moved
+end
+
+---Forget where a buffer's marks moved to, so the next render uses the stored
+---lines. For a buffer that was read again from its file.
+---@param bufnr number
+function M.forget_positions(bufnr)
+  tracked[bufnr] = nil
 end
 
 function M.clear_all()

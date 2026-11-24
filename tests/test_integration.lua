@@ -113,6 +113,69 @@ T["comments and marks"]["extmarks include sign in gutter"] = function()
   neq(details.sign_text, nil)
 end
 
+T["comment box wrapping"] = MiniTest.new_set()
+
+local function box_text_lines()
+  local ns_id = vim.api.nvim_create_namespace("review")
+  local extmarks = vim.api.nvim_buf_get_extmarks(bufnr, ns_id, 0, -1, { details = true })
+  local lines = {}
+  for _, virt_line in ipairs(extmarks[1][4].virt_lines) do
+    table.insert(lines, virt_line[1][1])
+  end
+  return lines
+end
+
+local function expect_fits_window(lines)
+  local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+  for _, line in ipairs(lines) do
+    eq(vim.fn.strdisplaywidth(line) <= info.width - info.textoff, true)
+  end
+end
+
+local function box_content(lines)
+  local content = {}
+  for i = 2, #lines - 1 do
+    table.insert(content, (lines[i]:gsub("^│ ", ""):gsub("%s*│$", "")))
+  end
+  return content
+end
+
+T["comment box wrapping"]["wraps long lines at spaces to fit the window"] = function()
+  local text = vim.trim(string.rep("wrapped ", 40))
+  store.add("test_file.lua", 3, "issue", text)
+
+  marks.render_for_buffer(bufnr)
+
+  local lines = box_text_lines()
+  expect_fits_window(lines)
+  local content = box_content(lines)
+  eq(#content > 1, true)
+  eq(table.concat(content, " "), text)
+end
+
+T["comment box wrapping"]["breaks a word that is longer than the box"] = function()
+  local text = string.rep("x", 200)
+  store.add("test_file.lua", 3, "note", text)
+
+  marks.render_for_buffer(bufnr)
+
+  local lines = box_text_lines()
+  expect_fits_window(lines)
+  eq(table.concat(box_content(lines)), text)
+end
+
+T["comment box wrapping"]["leaves room for the sign column that the comment opens"] = function()
+  vim.wo.signcolumn = "auto"
+  local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+  store.add("test_file.lua", 3, "issue", string.rep("x", 200))
+
+  marks.render_for_buffer(bufnr)
+
+  for _, line in ipairs(box_text_lines()) do
+    eq(vim.fn.strdisplaywidth(line) <= info.width - info.textoff - 2, true)
+  end
+end
+
 T["comment types"] = MiniTest.new_set()
 
 T["comment types"]["each comment type has correct highlight group"] = function()

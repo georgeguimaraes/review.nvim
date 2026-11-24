@@ -117,4 +117,38 @@ T["sync_positions"]["reports nothing moved when nothing changed"] = function()
   eq(marks.sync_positions(bufnr), 0)
 end
 
+T["sync_positions"]["drawing again keeps notes on the rows they moved to"] = function()
+  open_target({ "one", "two", "three" })
+  local comment = store.add("tests/notes_target.lua", 3, "note", "on three")
+  marks.render_plain_buffer(bufnr)
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, { "added", "added" })
+  marks.render_plain_buffer(bufnr)
+
+  local ns_id = vim.api.nvim_create_namespace("review")
+  eq(vim.api.nvim_buf_get_extmarks(bufnr, ns_id, 0, -1, {})[1][2], 4)
+  eq(store.get(comment.id).line, 3)
+  eq(marks.sync_positions(bufnr), 1)
+  eq(store.get(comment.id).line, 5)
+end
+
+T["sync_positions"][":edit! puts notes back on the stored lines"] = function()
+  require("review").setup()
+  local path = "tests/.notes_reload_target_" .. vim.fn.fnamemodify(vim.fn.tempname(), ":t") .. ".lua"
+  vim.fn.writefile({ "one", "two", "three" }, path)
+  vim.cmd("edit " .. path)
+  bufnr = vim.api.nvim_get_current_buf()
+  store.add(path, 3, "note", "on three")
+  marks.render_plain_buffer(bufnr)
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, { "added", "added" })
+  vim.cmd("edit!")
+  vim.fn.delete(path)
+
+  local ns_id = vim.api.nvim_create_namespace("review")
+  local extmarks = vim.api.nvim_buf_get_extmarks(bufnr, ns_id, 0, -1, {})
+  eq(#extmarks, 1)
+  eq(extmarks[1][2], 2)
+end
+
 return T
